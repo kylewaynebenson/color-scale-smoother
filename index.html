@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Professional color band smoother with interactive editing, multiple algorithms, and real-time visualization. Create smooth color gradients with HSL, LAB, RGB, and Bezier interpolation.">
+    <meta name="keywords" content="color, gradient, smoother, HSL, LAB, RGB, color picker, design tool">
+    <meta property="og:title" content="Color Band Smoother">
+    <meta property="og:description" content="Professional tool for creating smooth color gradients with multiple interpolation algorithms">
+    <meta property="og:type" content="website">
+    <title>Color Band Smoother - Professional Color Gradient Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-layout">
+        <div class="sidebar">
+            <h3>Smoothing Options</h3>
+            <div class="control-group">
+                <label for="bandCount">Number of Color Bands:</label>
+                <input type="range" id="bandCount" min="3" max="20" value="10">
+                <span id="bandCountValue">10</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="smoothingAlgorithm">Smoothing Algorithm:</label>
+                <select id="smoothingAlgorithm">
+                    <option value="hsl">HSL Interpolation</option>
+                    <option value="lab">LAB Interpolation</option>
+                    <option value="rgb">RGB Linear</option>
+                    <option value="bezier">Bezier Curve</option>
+                </select>
+                <p id="algorithmDescription" class="algorithm-description">
+                    Interpolates between colors maintaining hue relationships for natural gradients.
+                </p>
+            </div>
+            
+            <div class="control-group">
+                <label for="smoothingStrength">Smoothing Strength:</label>
+                <input type="range" id="smoothingStrength" min="0" max="1" step="0.1" value="1">
+                <span id="strengthValue">1.0</span>
+            </div>
+            
+            <button id="resetColorsBtn" class="btn btn-secondary full-width">Reset to Default Colors</button>
+        </div>
+
+        <div class="main-content">
+            <div class="color-editor">
+                <h3>Color Band Editor</h3>
+                <div id="colorBandEditor" class="color-band-editor"></div>
+            </div>
+
+            <div class="color-preview-section">
+                <div class="color-preview-container">
+                    <div id="colorBandPreview" class="color-band-preview"></div>
+                    <div class="copy-buttons">
+                        <button id="copyFigma" class="copy-btn">Copy for Figma</button>
+                        <button id="copyList" class="copy-btn">Copy comma separated list</button>
+                    </div>
+                </div>
+                <div class="color-graph-container">
+                    <div class="graph-header">
+                        <div class="graph-title">Color Lightness Progression</div>
+                        <button id="copyGraphFigma" class="copy-btn graph-copy-btn">Copy Graph for Figma</button>
+                    </div>
+                    <div id="colorSpaceGraph" class="color-space-graph">
+                        <div class="graph-content">
+                            <svg class="graph-svg" viewBox="0 0 440 160" preserveAspectRatio="xMidYMid meet">
+                                <defs>
+                                    <linearGradient id="backgroundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#f8f9fa"/>
+                                        <stop offset="100%" style="stop-color:#f8f9fa"/>
+                                    </linearGradient>
+                                </defs>
+                                <rect width="100%" height="100%" fill="url(#backgroundGradient)"/>
+                                
+                                <!-- Y-axis labels and ticks -->
+                                <g class="y-axis-group">
+                                    <text x="25" y="25" class="axis-label">100%</text>
+                                    <text x="25" y="140" class="axis-label">0%</text>
+                                    <text x="12" y="82" class="axis-title">L*</text>
+                                </g>
+                                
+                                <!-- X-axis label -->
+                                <g class="x-axis-group">
+                                    <text x="220" y="155" class="axis-title">Color Index</text>
+                                </g>
+                                
+                                <g class="graph-grid"></g>
+                                <g class="graph-line"></g>
+                                <g class="graph-points"></g>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="colorUtils.js"></script>
+    <script src="smoothingAlgorithms.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
