@@ -26,7 +26,7 @@ A clean, professional web application for creating and smoothing color gradients
 
 ## Live Demo
 
-Visit the live application: [Color Band Smoother](https://yourusername.github.io/color-scale-smoother/)
+Visit the live application: [Color Band Smoother](https://kylewaynebenson.github.io/color-scale-smoother/)
 
 ## Local Development
 
