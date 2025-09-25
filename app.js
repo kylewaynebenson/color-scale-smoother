@@ -15,6 +15,7 @@ class ColorBandEditor {
         
         this.initializeDefaultColors();
         this.setupEventListeners();
+        this.loadFromURL(); // Load state from URL if present
         this.renderEditor();
         this.updatePreview();
         this.drawColorSpaceGraph();
@@ -49,9 +50,7 @@ class ColorBandEditor {
             this.bandCount = parseInt(e.target.value);
             bandCountValue.textContent = this.bandCount;
             this.adjustBandCount();
-            this.renderEditor();
-            this.updatePreview();
-            this.drawColorSpaceGraph();
+            this.updateURL(); // Update URL when band count changes
         });
         
         // Smoothing strength slider - auto apply
@@ -61,6 +60,7 @@ class ColorBandEditor {
         strengthSlider.addEventListener('input', (e) => {
             strengthValue.textContent = parseFloat(e.target.value).toFixed(1);
             this.applySmoothing();
+            this.updateURL(); // Update URL when strength changes
         });
         
         // Smoothing algorithm dropdown - auto apply
@@ -68,14 +68,20 @@ class ColorBandEditor {
         algorithmSelect.addEventListener('change', (e) => {
             this.updateAlgorithmDescription(e.target.value);
             this.applySmoothing();
+            this.updateURL(); // Update URL when algorithm changes
         });
         
         // Initialize algorithm description
         this.updateAlgorithmDescription(algorithmSelect.value);
         
-        // Reset colors button
-        document.getElementById('resetColorsBtn').addEventListener('click', () => {
-            this.resetColors();
+        // Copy URL button
+        document.getElementById('copyUrlBtn').addEventListener('click', () => {
+            this.copyShareableURL();
+        });
+        
+        // Refresh/reapply algorithm button
+        document.getElementById('reapplyAlgorithmBtn').addEventListener('click', () => {
+            this.applySmoothing();
         });
         
         // Copy buttons
@@ -149,6 +155,12 @@ class ColorBandEditor {
             this.originalColors = newOriginalColors;
             this.lockedColors = newLockedColors;
         }
+        
+        // Re-render everything after band count change
+        this.renderEditor();
+        this.updatePreview();
+        this.drawColorSpaceGraph();
+        this.updateURL();
     }
     
     interpolateColors(color1, color2, factor) {
@@ -198,7 +210,13 @@ class ColorBandEditor {
             colorInput.className = 'color-input';
             colorInput.value = color;
             colorInput.addEventListener('change', (e) => {
+                // Auto-lock the color when manually edited
+                if (!this.lockedColors.has(index)) {
+                    this.lockedColors.add(index);
+                }
                 this.updateColor(index, e.target.value);
+                // Re-render to update lock button state
+                this.renderEditor();
             });
             
             // Hex input
@@ -209,10 +227,51 @@ class ColorBandEditor {
             hexInput.addEventListener('change', (e) => {
                 const hex = this.validateHex(e.target.value);
                 if (hex) {
+                    // Auto-lock the color when manually edited
+                    if (!this.lockedColors.has(index)) {
+                        this.lockedColors.add(index);
+                    }
                     this.updateColor(index, hex);
                     colorInput.value = hex;
+                    // Re-render to update lock button state
+                    this.renderEditor();
                 } else {
                     e.target.value = color; // Reset to current value
+                }
+            });
+            
+            // Add arrow key support for incrementing/decrementing colors
+            hexInput.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    
+                    const currentHex = this.validateHex(e.target.value) || color;
+                    const increment = e.key === 'ArrowUp' ? 5 : -5;
+                    const newHex = this.incrementHexColor(currentHex, increment);
+                    
+                    if (newHex) {
+                        // Auto-lock the color when using arrow keys
+                        const wasLocked = this.lockedColors.has(index);
+                        if (!wasLocked) {
+                            this.lockedColors.add(index);
+                        }
+                        
+                        e.target.value = newHex;
+                        this.updateColor(index, newHex);
+                        colorInput.value = newHex;
+                        
+                        // Only update lock button if state changed, maintain focus
+                        if (!wasLocked) {
+                            const lockButton = group.querySelector('.lock-btn');
+                            if (lockButton) {
+                                lockButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" /></svg>';
+                                lockButton.classList.add('locked');
+                            }
+                        }
+                        
+                        // Keep focus on the input
+                        setTimeout(() => e.target.focus(), 0);
+                    }
                 }
             });
             
@@ -234,7 +293,26 @@ class ColorBandEditor {
         
         return '#' + hex.toLowerCase();
     }
-    
+
+    incrementHexColor(hex, increment) {
+        // Convert hex to RGB
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        
+        // Increment each channel by the specified amount
+        const newR = Math.max(0, Math.min(255, r + increment));
+        const newG = Math.max(0, Math.min(255, g + increment));
+        const newB = Math.max(0, Math.min(255, b + increment));
+        
+        // Convert back to hex
+        const rHex = newR.toString(16).padStart(2, '0');
+        const gHex = newG.toString(16).padStart(2, '0');
+        const bHex = newB.toString(16).padStart(2, '0');
+        
+        return `#${rHex}${gHex}${bHex}`;
+    }
+
     toggleLock(index) {
         if (this.lockedColors.has(index)) {
             this.lockedColors.delete(index);
@@ -242,14 +320,15 @@ class ColorBandEditor {
             this.lockedColors.add(index);
         }
         this.renderEditor();
-        this.updatePreview();
         this.drawColorSpaceGraph();
+        this.updateURL(); // Update URL when lock state changes
     }
     
     updateColor(index, hex) {
         this.colors[index] = hex;
         this.updatePreview();
         this.drawColorSpaceGraph();
+        this.updateURL(); // Update URL when color changes
     }
     
     updateAlgorithmDescription(algorithm) {
@@ -309,6 +388,7 @@ class ColorBandEditor {
         this.renderEditor();
         this.updatePreview();
         this.drawColorSpaceGraph();
+        this.updateURL(); // Update URL when smoothing is applied
     }
     
     drawColorSpaceGraph() {
@@ -382,7 +462,7 @@ class ColorBandEditor {
             circle.setAttribute('cx', point.x);
             circle.setAttribute('cy', point.y);
             circle.setAttribute('r', 4);
-            circle.className = this.lockedColors.has(point.index) ? 'locked' : 'unlocked';
+            circle.setAttribute('class', this.lockedColors.has(point.index) ? 'locked' : 'unlocked');
             
             // Add tooltip
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
@@ -405,19 +485,125 @@ class ColorBandEditor {
         this.renderEditor();
         this.updatePreview();
         this.drawColorSpaceGraph();
+        this.updateURL(); // Update URL when resetting
+    }
+    
+    loadFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Load colors from URL
+        const colorsParam = urlParams.get('colors');
+        if (colorsParam) {
+            try {
+                const colors = colorsParam.split(',').map(c => c.startsWith('#') ? c : '#' + c);
+                if (colors.length >= 3 && colors.every(c => this.validateHex(c))) {
+                    this.colors = colors;
+                    this.originalColors = [...colors];
+                    this.bandCount = colors.length;
+                    
+                    // Update DOM elements if they exist
+                    const bandCountSlider = document.getElementById('bandCount');
+                    const bandCountValue = document.getElementById('bandCountValue');
+                    if (bandCountSlider) bandCountSlider.value = this.bandCount;
+                    if (bandCountValue) bandCountValue.textContent = this.bandCount;
+                }
+            } catch (e) {
+                console.warn('Invalid colors in URL:', e);
+            }
+        }
+        
+        // Load locked colors from URL
+        const lockedParam = urlParams.get('locked');
+        if (lockedParam) {
+            try {
+                const lockedIndices = lockedParam.split(',').map(i => parseInt(i)).filter(i => !isNaN(i));
+                this.lockedColors = new Set(lockedIndices);
+            } catch (e) {
+                console.warn('Invalid locked indices in URL:', e);
+            }
+        }
+        
+        // Load algorithm from URL
+        const algorithmParam = urlParams.get('algorithm');
+        if (algorithmParam && ['hsl', 'lab', 'rgb', 'bezier'].includes(algorithmParam)) {
+            const algorithmSelect = document.getElementById('smoothingAlgorithm');
+            if (algorithmSelect) {
+                algorithmSelect.value = algorithmParam;
+                this.updateAlgorithmDescription(algorithmParam);
+            }
+        }
+        
+        // Load strength from URL
+        const strengthParam = urlParams.get('strength');
+        if (strengthParam) {
+            const strength = parseFloat(strengthParam);
+            if (!isNaN(strength) && strength >= 0 && strength <= 1) {
+                const strengthSlider = document.getElementById('smoothingStrength');
+                const strengthValue = document.getElementById('smoothingStrengthValue');
+                if (strengthSlider) strengthSlider.value = strength;
+                if (strengthValue) strengthValue.textContent = strength.toFixed(1);
+            }
+        }
+    }
+    
+    updateURL() {
+        const urlParams = new URLSearchParams();
+        
+        // Add colors (remove # prefix for cleaner URLs)
+        const colorsString = this.colors.map(c => c.replace('#', '')).join(',');
+        urlParams.set('colors', colorsString);
+        
+        // Add locked colors if any
+        if (this.lockedColors.size > 0) {
+            const lockedString = Array.from(this.lockedColors).sort((a, b) => a - b).join(',');
+            urlParams.set('locked', lockedString);
+        }
+        
+        // Add algorithm if not default (hsl)
+        const algorithm = document.getElementById('smoothingAlgorithm').value;
+        if (algorithm !== 'hsl') {
+            urlParams.set('algorithm', algorithm);
+        }
+        
+        // Add strength if not default (0.5)
+        const strength = parseFloat(document.getElementById('smoothingStrength').value);
+        if (strength !== 0.5) {
+            urlParams.set('strength', strength.toString());
+        }
+        
+        // Update URL without page reload
+        const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+        window.history.replaceState({}, '', newUrl);
+    }
+    
+    async copyShareableURL() {
+        const currentUrl = window.location.href;
+        
+        try {
+            await navigator.clipboard.writeText(currentUrl);
+            this.showCopyFeedback('copyUrlBtn', 'URL copied!');
+        } catch (err) {
+            console.error('Failed to copy URL: ', err);
+            this.showCopyFeedback('copyUrlBtn', 'Copy failed');
+        }
     }
     
     async copyForFigma() {
         // Create SVG rectangles that Figma can interpret as editable shapes
         const width = 100; // Width per rectangle
         const height = 120; // Height to match preview
+        const textHeight = 20; // Space for hex code text
         const totalWidth = this.colors.length * width;
+        const totalHeight = height + textHeight;
         
-        let svgContent = `<svg width="${totalWidth}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
+        let svgContent = `<svg width="${totalWidth}" height="${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
         
         this.colors.forEach((color, index) => {
             const x = index * width;
+            // Add color rectangle
             svgContent += `<rect x="${x}" y="0" width="${width}" height="${height}" fill="${color}" />`;
+            // Add hex code text below
+            svgContent += `<text x="${x + width/2}" y="${height + 15}" fill="#4a5568" font-size="12" text-anchor="middle" font-family="system-ui">${color}</text>`;
         });
         
         svgContent += '</svg>';
@@ -445,16 +631,45 @@ class ColorBandEditor {
     
     showCopyFeedback(buttonId, message) {
         const button = document.getElementById(buttonId);
-        const originalText = button.textContent;
-        button.textContent = message;
-        button.style.background = '#d4edda';
-        button.style.color = '#155724';
         
-        setTimeout(() => {
-            button.textContent = originalText;
-            button.style.background = '';
-            button.style.color = '';
-        }, 1000);
+        // Check if it's an icon button
+        if (button.classList.contains('btn-icon')) {
+            // For icon buttons, show a temporary tooltip-like feedback
+            const originalTitle = button.title;
+            const originalSvg = button.innerHTML;
+            
+            // Show checkmark icon for success or X for failure
+            const isSuccess = !message.includes('failed') && !message.includes('Need colors');
+            const feedbackIcon = isSuccess ? 
+                '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></svg>' :
+                '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>';
+            
+            button.innerHTML = feedbackIcon;
+            button.title = message;
+            button.style.background = isSuccess ? '#d4edda' : '#f8d7da';
+            button.style.color = isSuccess ? '#155724' : '#721c24';
+            button.style.borderColor = isSuccess ? '#c3e6cb' : '#f5c6cb';
+            
+            setTimeout(() => {
+                button.innerHTML = originalSvg;
+                button.title = originalTitle;
+                button.style.background = '';
+                button.style.color = '';
+                button.style.borderColor = '';
+            }, 1500);
+        } else {
+            // For text buttons, use the original method
+            const originalText = button.textContent;
+            button.textContent = message;
+            button.style.background = '#d4edda';
+            button.style.color = '#155724';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '';
+                button.style.color = '';
+            }, 1000);
+        }
     }
     
     async copyGraphForFigma() {

@@ -115,6 +115,65 @@ body {
     cursor: not-allowed;
 }
 
+.btn-icon {
+    background: #ffffff;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.btn-icon:hover:not(:disabled) {
+    background: #f7fafc;
+    border-color: #cbd5e0;
+    transform: translateY(-1px);
+}
+
+.algorithm-control-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.algorithm-control-wrapper select {
+    flex: 1;
+}
+
+.refresh-btn {
+    background: #ffffff;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.refresh-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.refresh-btn:hover {
+    background: #f7fafc;
+    border-color: #cbd5e0;
+    transform: translateY(-1px);
+}
+
 .smoothing-controls h3 {
     margin-top: 0;
     margin-bottom: 20px;
@@ -269,14 +328,12 @@ body {
     cursor: pointer;
     transition: all 0.15s ease;
     backdrop-filter: blur(10px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .copy-btn:hover {
     background: rgba(255, 255, 255, 1);
     color: #2d3748;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .copy-btn:active {
@@ -408,7 +465,6 @@ body {
 
 .graph-points circle {
     stroke-width: 2;
-    transition: all 0.2s ease;
     cursor: pointer;
 }
 
@@ -417,36 +473,9 @@ body {
     stroke: #4a5568;
 }
 
-.graph-points circle.unlocked:hover {
-    fill: #4a5568;
-    stroke: #2d3748;
-    transform: scale(1.2);
-}
-
 .graph-points circle.locked {
     fill: #2d3748;
     stroke: #1a202c;
-}
-
-.graph-points circle.locked:hover {
-    fill: #1a202c;
-    stroke: #000000;
-    transform: scale(1.2);
-}
-
-.graph-points circle.unlocked {
-    fill: #3498db;
-    stroke: #2980b9;
-}
-
-.graph-points circle.locked {
-    fill: #e74c3c;
-    stroke: #c0392b;
-}
-
-.graph-points circle:hover {
-    r: 6;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
 #colorSpaceGraph {
@@ -506,9 +535,9 @@ body {
 
 .lock-btn {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
+    border: 1px solid transparent;
     cursor: pointer;
-    padding: 6px;
+    padding: 3px;
     border-radius: 4px;
     color: #718096;
     transition: all 0.15s ease;
