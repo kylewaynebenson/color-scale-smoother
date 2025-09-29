@@ -377,9 +377,6 @@ body {
 }
 
 /* Color Editor */
-.color-editor {
-  margin-bottom: var(--space-5);
-}
 
 .color-editor h3 {
   margin-top: 0;
@@ -707,7 +704,6 @@ body {
 
 .color-preview-container {
   position: relative;
-  margin-bottom: var(--space-5);
 }
 
 .color-band-preview {
@@ -769,7 +765,6 @@ body {
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   padding: var(--space-8);
-  margin-top: var(--space-4);
   transition: var(--transition-colors);
 }
 
