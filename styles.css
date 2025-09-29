@@ -759,6 +759,19 @@ body {
   background: var(--color-surface-tertiary);
 }
 
+/* Graphs Container */
+.graphs-container {
+  display: flex;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1024px) {
+  .graphs-container {
+    flex-direction: column;
+  }
+}
+
 /* Graph Components */
 .color-graph-container {
   background: var(--color-surface);
@@ -766,6 +779,8 @@ body {
   border: 1px solid var(--color-border);
   padding: var(--space-8);
   transition: var(--transition-colors);
+  flex: 1;
+  min-width: 0;
 }
 
 .graph-header {
@@ -902,6 +917,32 @@ body {
 .graph-points circle.locked {
   fill: var(--color-action-primary-default);
   stroke: var(--color-action-primary-active);
+}
+
+/* Hue Graph Specific Styles */
+.hue-graph-line path {
+  fill: none;
+  stroke: var(--color-warning-600);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: var(--transition-colors);
+}
+
+.hue-graph-points circle {
+  stroke-width: 2;
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.hue-graph-points circle.unlocked {
+  fill: var(--color-surface);
+  stroke: var(--color-warning-600);
+}
+
+.hue-graph-points circle.locked {
+  fill: var(--color-warning-600);
+  stroke: var(--color-warning-700);
 }
 
 /* Color Input Components */
