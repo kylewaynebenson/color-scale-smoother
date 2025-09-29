@@ -97,8 +97,8 @@
             <div class="graphs-container">
                 <div class="color-graph-container">
                     <div class="graph-header">
-                        <div class="graph-title">Color Lightness Progression</div>
-                        <button id="copyGraphFigma" class="copy-btn graph-copy-btn">Copy Graph for Figma</button>
+                        <div class="graph-title">Lightness relationship</div>
+                        <button id="copyGraphFigma" class="copy-btn graph-copy-btn">Copy for Figma</button>
                     </div>
                     <div id="colorSpaceGraph" class="color-space-graph">
                         <div class="graph-content">
@@ -132,8 +132,8 @@
                 </div>
                 <div class="color-graph-container">
                     <div class="graph-header">
-                        <div class="graph-title">Hue Shift Progression</div>
-                        <button id="copyHueGraphFigma" class="copy-btn graph-copy-btn">Copy Hue Graph for Figma</button>
+                        <div class="graph-title">Hue relationship</div>
+                        <button id="copyHueGraphFigma" class="copy-btn graph-copy-btn">Copy for Figma</button>
                     </div>
                     <div id="hueSpaceGraph" class="color-space-graph">
                         <div class="graph-content">
@@ -162,6 +162,42 @@
                                 <g class="graph-grid"></g>
                                 <g class="hue-graph-line"></g>
                                 <g class="hue-graph-points"></g>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="color-graph-container">
+                    <div class="graph-header">
+                        <div class="graph-title">Saturation relationship</div>
+                        <button id="copySaturationGraphFigma" class="copy-btn graph-copy-btn">Copy for Figma</button>
+                    </div>
+                    <div id="saturationSpaceGraph" class="color-space-graph">
+                        <div class="graph-content">
+                            <svg class="graph-svg" viewBox="0 0 440 160" preserveAspectRatio="xMidYMid meet">
+                                <defs>
+                                    <linearGradient id="saturationBackgroundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" class="graph-bg-stop"/>
+                                        <stop offset="100%" class="graph-bg-stop"/>
+                                    </linearGradient>
+                                </defs>
+                                <rect width="100%" height="100%" fill="url(#saturationBackgroundGradient)"/>
+                                
+                                <!-- Y-axis labels and ticks -->
+                                <g class="y-axis-group">
+                                    <text x="25" y="25" class="axis-label saturation-max">100%</text>
+                                    <text x="25" y="82" class="axis-label saturation-mid">50%</text>
+                                    <text x="25" y="140" class="axis-label saturation-min">0%</text>
+                                    <text x="12" y="82" class="axis-title">S%</text>
+                                </g>
+                                
+                                <!-- X-axis label -->
+                                <g class="x-axis-group">
+                                    <text x="220" y="155" class="axis-title">Color Index</text>
+                                </g>
+                                
+                                <g class="graph-grid"></g>
+                                <g class="saturation-graph-line"></g>
+                                <g class="saturation-graph-points"></g>
                             </svg>
                         </div>
                     </div>

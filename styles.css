@@ -766,9 +766,16 @@ body {
   flex-wrap: wrap;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
   .graphs-container {
     flex-direction: column;
+  }
+}
+
+@media (min-width: 1201px) {
+  .color-graph-container {
+    flex: 1;
+    min-width: 300px;
   }
 }
 
@@ -777,7 +784,7 @@ body {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
-  padding: var(--space-8);
+  padding: var(--space-3);
   transition: var(--transition-colors);
   flex: 1;
   min-width: 0;
@@ -787,7 +794,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-2);
 }
 
 .graph-title {
@@ -943,6 +950,32 @@ body {
 .hue-graph-points circle.locked {
   fill: var(--color-warning-600);
   stroke: var(--color-warning-700);
+}
+
+/* Saturation Graph Specific Styles */
+.saturation-graph-line path {
+  fill: none;
+  stroke: var(--color-success-600);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: var(--transition-colors);
+}
+
+.saturation-graph-points circle {
+  stroke-width: 2;
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.saturation-graph-points circle.unlocked {
+  fill: var(--color-surface);
+  stroke: var(--color-success-600);
+}
+
+.saturation-graph-points circle.locked {
+  fill: var(--color-success-600);
+  stroke: var(--color-success-700);
 }
 
 /* Color Input Components */

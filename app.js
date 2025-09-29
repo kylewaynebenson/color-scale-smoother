@@ -20,6 +20,7 @@ class ColorBandEditor {
         this.updatePreview();
         this.drawColorSpaceGraph();
         this.drawHueSpaceGraph();
+        this.drawSaturationSpaceGraph();
     }
     
     initializeDefaultColors() {
@@ -110,8 +111,8 @@ class ColorBandEditor {
             this.copyHueGraphForFigma();
         });
         
-        document.getElementById('copyHueGraphFigma').addEventListener('click', () => {
-            this.copyHueGraphForFigma();
+        document.getElementById('copySaturationGraphFigma').addEventListener('click', () => {
+            this.copySaturationGraphForFigma();
         });
     }
     
@@ -228,6 +229,8 @@ class ColorBandEditor {
         this.renderEditor();
         this.updatePreview();
         this.drawColorSpaceGraph();
+        this.drawHueSpaceGraph();
+        this.drawSaturationSpaceGraph();
         this.updateURL();
     }
     
@@ -395,6 +398,7 @@ class ColorBandEditor {
         this.updatePreview();
         this.drawColorSpaceGraph();
         this.drawHueSpaceGraph();
+        this.drawSaturationSpaceGraph();
         this.updateURL(); // Update URL when color changes
     }
     
@@ -455,6 +459,8 @@ class ColorBandEditor {
         this.renderEditor();
         this.updatePreview();
         this.drawColorSpaceGraph();
+        this.drawHueSpaceGraph();
+        this.drawSaturationSpaceGraph();
         this.updateURL(); // Update URL when smoothing is applied
     }
     
@@ -671,6 +677,114 @@ class ColorBandEditor {
         });
     }
     
+    drawSaturationSpaceGraph() {
+        if (this.colors.length < 2) return;
+        
+        const svg = document.querySelector('#saturationSpaceGraph svg');
+        const gridGroup = svg.querySelector('.graph-grid');
+        const lineGroup = svg.querySelector('.saturation-graph-line');
+        const pointsGroup = svg.querySelector('.saturation-graph-points');
+        
+        // Clear existing content
+        gridGroup.innerHTML = '';
+        lineGroup.innerHTML = '';
+        pointsGroup.innerHTML = '';
+        
+        // Convert colors to saturation values
+        const saturationValues = this.colors.map(color => {
+            const hsl = ColorUtils.hexToHsl(color);
+            return hsl ? hsl.s : 0; // Fallback to 0 if conversion fails
+        });
+        
+        // Find min/max for scaling
+        let minSaturation = Math.min(...saturationValues);
+        let maxSaturation = Math.max(...saturationValues);
+        
+        // Handle edge case where all saturations are the same
+        if (minSaturation === maxSaturation) {
+            minSaturation = Math.max(0, maxSaturation - 10);
+            maxSaturation = Math.min(100, maxSaturation + 10);
+        }
+        
+        // Ensure we have some range to display
+        const range = maxSaturation - minSaturation;
+        if (range < 10) {
+            const center = (minSaturation + maxSaturation) / 2;
+            minSaturation = Math.max(0, center - 5);
+            maxSaturation = Math.min(100, center + 5);
+        }
+        
+        // Update axis labels with actual range
+        const saturationMaxLabel = svg.querySelector('.saturation-max');
+        const saturationMidLabel = svg.querySelector('.saturation-mid');
+        const saturationMinLabel = svg.querySelector('.saturation-min');
+        
+        if (saturationMaxLabel && saturationMidLabel && saturationMinLabel) {
+            const midSaturation = (minSaturation + maxSaturation) / 2;
+            saturationMaxLabel.textContent = `${Math.round(maxSaturation)}%`;
+            saturationMidLabel.textContent = `${Math.round(midSaturation)}%`;
+            saturationMinLabel.textContent = `${Math.round(minSaturation)}%`;
+        }
+        
+        // Graph dimensions
+        const width = 440;
+        const height = 160;
+        const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+        const graphWidth = width - margin.left - margin.right;
+        const graphHeight = height - margin.top - margin.bottom;
+        
+        // Create grid lines
+        const gridLines = 5;
+        for (let i = 0; i <= gridLines; i++) {
+            const y = margin.top + (i / gridLines) * graphHeight;
+            const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            gridLine.setAttribute('x1', margin.left);
+            gridLine.setAttribute('y1', y);
+            gridLine.setAttribute('x2', width - margin.right);
+            gridLine.setAttribute('y2', y);
+            gridGroup.appendChild(gridLine);
+        }
+        
+        // Create points
+        const points = saturationValues.map((saturation, index) => {
+            const x = margin.left + (index / (this.colors.length - 1)) * graphWidth;
+            const y = margin.top + graphHeight - ((saturation - minSaturation) / (maxSaturation - minSaturation)) * graphHeight;
+            return { x, y, saturation, index };
+        });
+        
+        // Create line path
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        let pathData = `M ${points[0].x} ${points[0].y}`;
+        
+        for (let i = 1; i < points.length; i++) {
+            pathData += ` L ${points[i].x} ${points[i].y}`;
+        }
+        
+        path.setAttribute('d', pathData);
+        lineGroup.appendChild(path);
+        
+        // Create points
+        points.forEach(point => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', point.x);
+            circle.setAttribute('cy', point.y);
+            circle.setAttribute('r', 4);
+            circle.setAttribute('class', this.lockedColors.has(point.index) ? 'locked' : 'unlocked');
+            
+            // Add tooltip
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            title.textContent = `Color ${point.index}: ${Math.round(point.saturation)}%`;
+            circle.appendChild(title);
+            
+            circle.style.cursor = 'pointer';
+            circle.addEventListener('click', () => {
+                this.toggleLock(point.index);
+            });
+            
+            pointsGroup.appendChild(circle);
+        });
+    }
+    
     resetColors() {
         this.colors = [...this.originalColors];
         this.lockedColors.clear();
@@ -678,6 +792,7 @@ class ColorBandEditor {
         this.updatePreview();
         this.drawColorSpaceGraph();
         this.drawHueSpaceGraph();
+        this.drawSaturationSpaceGraph();
         this.updateURL(); // Update URL when resetting
     }
     
@@ -1041,6 +1156,103 @@ class ColorBandEditor {
         }
     }
     
+    async copySaturationGraphForFigma() {
+        if (this.colors.length < 2) {
+            this.showCopyFeedback('copySaturationGraphFigma', 'Need colors first');
+            return;
+        }
+        
+        const width = 440;
+        const height = 160;
+        const margin = { top: 30, right: 30, bottom: 30, left: 40 };
+        const graphWidth = width - margin.left - margin.right;
+        const graphHeight = height - margin.top - margin.bottom;
+        
+        // Convert colors to saturation values
+        const saturationValues = this.colors.map(color => {
+            const hsl = ColorUtils.hexToHsl(color);
+            return hsl ? hsl.s : 0;
+        });
+        
+        // Find min/max for scaling
+        let minSaturation = Math.min(...saturationValues);
+        let maxSaturation = Math.max(...saturationValues);
+        
+        // Handle edge case where all saturations are the same
+        if (minSaturation === maxSaturation) {
+            minSaturation = Math.max(0, maxSaturation - 10);
+            maxSaturation = Math.min(100, maxSaturation + 10);
+        }
+        
+        // Ensure we have some range to display
+        const range = maxSaturation - minSaturation;
+        if (range < 10) {
+            const center = (minSaturation + maxSaturation) / 2;
+            minSaturation = Math.max(0, center - 5);
+            maxSaturation = Math.min(100, center + 5);
+        }
+        
+        // Create SVG
+        let svgContent = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
+        
+        // Background
+        svgContent += `<rect width="100%" height="100%" fill="#f8f9fa"/>`;
+        
+        // Grid lines
+        for (let i = 0; i <= 4; i++) {
+            const y = margin.top + (i / 4) * graphHeight;
+            svgContent += `<line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" stroke="#e2e8f0" stroke-width="1"/>`;
+        }
+        
+        // Y-axis labels
+        svgContent += `<text x="25" y="35" font-family="system-ui" font-size="11" fill="#64748b" text-anchor="middle">${Math.round(maxSaturation)}%</text>`;
+        svgContent += `<text x="25" y="${height - 20}" font-family="system-ui" font-size="11" fill="#64748b" text-anchor="middle">${Math.round(minSaturation)}%</text>`;
+        svgContent += `<text x="12" y="${height/2 + 5}" font-family="system-ui" font-size="12" fill="#475569" text-anchor="middle" font-weight="500">S%</text>`;
+        
+        // X-axis label
+        svgContent += `<text x="${width/2}" y="${height - 5}" font-family="system-ui" font-size="12" fill="#475569" text-anchor="middle" font-weight="500">Color Index</text>`;
+        
+        // Create path data
+        let pathData = '';
+        const points = [];
+        
+        for (let i = 0; i < this.colors.length; i++) {
+            const x = margin.left + (i / (this.colors.length - 1)) * graphWidth;
+            const normalizedValue = (saturationValues[i] - minSaturation) / (maxSaturation - minSaturation);
+            const y = height - margin.bottom - normalizedValue * graphHeight;
+            
+            points.push({ x, y, index: i });
+            
+            if (i === 0) {
+                pathData += `M ${x} ${y}`;
+            } else {
+                pathData += ` L ${x} ${y}`;
+            }
+        }
+        
+        // Add line (using green color for saturation)
+        svgContent += `<path d="${pathData}" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+        
+        // Add points
+        points.forEach(point => {
+            const isLocked = this.lockedColors.has(point.index);
+            const fillColor = isLocked ? '#059669' : '#ffffff';
+            const strokeColor = isLocked ? '#047857' : '#059669';
+            
+            svgContent += `<circle cx="${point.x}" cy="${point.y}" r="4" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>`;
+        });
+        
+        svgContent += '</svg>';
+        
+        try {
+            await navigator.clipboard.writeText(svgContent);
+            this.showCopyFeedback('copySaturationGraphFigma', 'Saturation graph copied!');
+        } catch (err) {
+            console.error('Failed to copy saturation graph: ', err);
+            this.showCopyFeedback('copySaturationGraphFigma', 'Copy failed');
+        }
+    }
+    
     async importFromClipboard() {
         try {
             // Check if clipboard API is available
@@ -1084,6 +1296,8 @@ class ColorBandEditor {
             this.renderEditor();
             this.updatePreview();
             this.drawColorSpaceGraph();
+            this.drawHueSpaceGraph();
+            this.drawSaturationSpaceGraph();
             this.updateURL();
             
             // Show success feedback
