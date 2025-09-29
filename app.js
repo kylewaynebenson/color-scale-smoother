@@ -5,6 +5,11 @@ class ColorBandEditor {
         this.lockedColors = new Set();
         this.originalColors = [];
         
+        // History system
+        this.history = [];
+        this.maxHistorySize = 50;
+        this.isHistoryOpen = false;
+        
         // Algorithm descriptions
         this.algorithmDescriptions = {
             'hsl': 'Interpolates between colors maintaining hue relationships for natural gradients.',
@@ -15,12 +20,19 @@ class ColorBandEditor {
         
         this.initializeDefaultColors();
         this.setupEventListeners();
+        this.setupHistorySystem();
+        this.loadHistoryFromStorage();
         this.loadFromURL(); // Load state from URL if present
         this.renderEditor();
         this.updatePreview();
         this.drawColorSpaceGraph();
         this.drawHueSpaceGraph();
         this.drawSaturationSpaceGraph();
+        
+        // Only save initial state if history is empty (fresh start)
+        if (this.history.length === 0) {
+            this.saveToHistory('Initial colors');
+        }
     }
     
     initializeDefaultColors() {
@@ -236,6 +248,7 @@ class ColorBandEditor {
         this.drawHueSpaceGraph();
         this.drawSaturationSpaceGraph();
         this.updateURL();
+        this.saveToHistory(`Changed to ${this.bandCount} colors`);
     }
     
     interpolateColors(color1, color2, factor) {
@@ -387,7 +400,8 @@ class ColorBandEditor {
     }
 
     toggleLock(index) {
-        if (this.lockedColors.has(index)) {
+        const wasLocked = this.lockedColors.has(index);
+        if (wasLocked) {
             this.lockedColors.delete(index);
         } else {
             this.lockedColors.add(index);
@@ -395,6 +409,9 @@ class ColorBandEditor {
         this.renderEditor();
         this.drawColorSpaceGraph();
         this.updateURL(); // Update URL when lock state changes
+        
+        const action = wasLocked ? 'Unlocked' : 'Locked';
+        this.saveToHistory(`${action} color ${index + 1}`, false); // Don't skip similar for lock changes
     }
     
     updateColor(index, hex) {
@@ -404,6 +421,7 @@ class ColorBandEditor {
         this.drawHueSpaceGraph();
         this.drawSaturationSpaceGraph();
         this.updateURL(); // Update URL when color changes
+        this.saveToHistory(`Updated color ${index + 1}`);
     }
     
     updateAlgorithmDescription(algorithm) {
@@ -466,6 +484,9 @@ class ColorBandEditor {
         this.drawHueSpaceGraph();
         this.drawSaturationSpaceGraph();
         this.updateURL(); // Update URL when smoothing is applied
+        
+        const algorithmName = document.getElementById('smoothingAlgorithm').value;
+        this.saveToHistory(`Applied ${algorithmName.toUpperCase()} smoothing`);
     }
     
     drawColorSpaceGraph() {
@@ -798,6 +819,7 @@ class ColorBandEditor {
         this.drawHueSpaceGraph();
         this.drawSaturationSpaceGraph();
         this.updateURL(); // Update URL when resetting
+        this.saveToHistory('Reset to original colors');
     }
     
     loadFromURL() {
@@ -1454,6 +1476,7 @@ class ColorBandEditor {
             this.drawHueSpaceGraph();
             this.drawSaturationSpaceGraph();
             this.updateURL();
+            this.saveToHistory(`Imported ${colors.length} colors from clipboard`);
             
             // Show success feedback
             const button = document.getElementById('importClipboardBtn');
@@ -1541,6 +1564,228 @@ class ColorBandEditor {
     
     isValidHexColor(hex) {
         return /^#[0-9A-Fa-f]{6}$/.test(hex);
+    }
+    
+    // History System Methods
+    setupHistorySystem() {
+        // History toggle button
+        document.getElementById('historyToggle').addEventListener('click', () => {
+            this.toggleHistory();
+        });
+        
+        // History close button
+        document.getElementById('historyClose').addEventListener('click', () => {
+            this.closeHistory();
+        });
+        
+        // History clear button
+        document.getElementById('historyClear').addEventListener('click', () => {
+            this.clearHistory();
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                this.undo();
+            }
+            if (e.key === 'Escape' && this.isHistoryOpen) {
+                this.closeHistory();
+            }
+        });
+    }
+    
+    saveToHistory(action, skipSimilar = true) {
+        const state = {
+            colors: [...this.colors],
+            lockedColors: new Set(this.lockedColors),
+            bandCount: this.bandCount,
+            timestamp: new Date(),
+            action: action
+        };
+        
+        // Skip if colors are identical to last entry (unless forced)
+        if (skipSimilar && this.history.length > 0) {
+            const lastState = this.history[this.history.length - 1];
+            if (JSON.stringify(lastState.colors) === JSON.stringify(state.colors) &&
+                lastState.bandCount === state.bandCount) {
+                return;
+            }
+        }
+        
+        this.history.push(state);
+        
+        // Limit history size
+        if (this.history.length > this.maxHistorySize) {
+            this.history.shift();
+        }
+        
+        this.updateHistoryUI();
+        this.saveHistoryToStorage();
+    }
+    
+    undo() {
+        if (this.history.length <= 1) return; // Keep at least the initial state
+        
+        // Remove current state and restore previous
+        this.history.pop();
+        const previousState = this.history[this.history.length - 1];
+        
+        this.restoreState(previousState);
+        this.updateHistoryUI();
+        this.saveHistoryToStorage();
+    }
+    
+    restoreFromHistory(index) {
+        if (index < 0 || index >= this.history.length) return;
+        
+        // Remove all states after the selected one
+        this.history = this.history.slice(0, index + 1);
+        
+        const state = this.history[index];
+        this.restoreState(state);
+        this.updateHistoryUI();
+        this.saveHistoryToStorage();
+    }
+    
+    restoreState(state) {
+        this.colors = [...state.colors];
+        this.lockedColors = new Set(state.lockedColors);
+        this.bandCount = state.bandCount;
+        
+        // Update UI elements
+        document.getElementById('bandCount').value = this.bandCount;
+        document.getElementById('bandCountValue').textContent = this.bandCount;
+        
+        // Re-render everything
+        this.renderEditor();
+        this.updatePreview();
+        this.drawColorSpaceGraph();
+        this.drawHueSpaceGraph();
+        this.drawSaturationSpaceGraph();
+        this.updateURL();
+    }
+    
+    toggleHistory() {
+        if (this.isHistoryOpen) {
+            this.closeHistory();
+        } else {
+            this.openHistory();
+        }
+    }
+    
+    openHistory() {
+        this.isHistoryOpen = true;
+        document.body.classList.add('history-open');
+        document.getElementById('historyPanel').classList.add('open');
+        this.updateHistoryUI();
+    }
+    
+    closeHistory() {
+        this.isHistoryOpen = false;
+        document.body.classList.remove('history-open');
+        document.getElementById('historyPanel').classList.remove('open');
+    }
+    
+    updateHistoryUI() {
+        // Update current colors display
+        const currentColorsContainer = document.getElementById('currentColors');
+        currentColorsContainer.innerHTML = this.colors.map(color => 
+            `<div class="history-color-swatch" style="background-color: ${color}"></div>`
+        ).join('');
+        
+        // Update timeline
+        const timeline = document.getElementById('historyTimeline');
+        timeline.innerHTML = '';
+        
+        // Show history in reverse order (newest first)
+        const reversedHistory = [...this.history].reverse();
+        reversedHistory.forEach((state, reverseIndex) => {
+            const actualIndex = this.history.length - 1 - reverseIndex;
+            if (actualIndex === this.history.length - 1) return; // Skip current state
+            
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.onclick = () => this.restoreFromHistory(actualIndex);
+            
+            const timeAgo = this.getTimeAgo(state.timestamp);
+            
+            item.innerHTML = `
+                <div class="history-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z" />
+                    </svg>
+                </div>
+                <div class="history-info">
+                    <div class="history-label">${state.action}</div>
+                    <div class="history-timestamp">${timeAgo}</div>
+                    <div class="history-colors">
+                        ${state.colors.map(color => 
+                            `<div class="history-color-swatch" style="background-color: ${color}"></div>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+            
+            timeline.appendChild(item);
+        });
+    }
+    
+    getTimeAgo(timestamp) {
+        const now = new Date();
+        const diffMs = now - timestamp;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        
+        return timestamp.toLocaleDateString();
+    }
+    
+    // LocalStorage methods for history persistence
+    loadHistoryFromStorage() {
+        try {
+            const saved = localStorage.getItem('colorBandHistory');
+            if (saved) {
+                const data = JSON.parse(saved);
+                // Convert timestamp and lockedColors back to correct types
+                this.history = data.map(item => ({
+                    ...item,
+                    timestamp: new Date(item.timestamp),
+                    lockedColors: new Set(item.lockedColors)
+                }));
+                this.updateHistoryUI();
+            }
+        } catch (error) {
+            console.warn('Failed to load history from localStorage:', error);
+            this.history = [];
+        }
+    }
+    
+    saveHistoryToStorage() {
+        try {
+            // Convert Set to Array for JSON serialization
+            const serializable = this.history.map(item => ({
+                ...item,
+                lockedColors: Array.from(item.lockedColors)
+            }));
+            localStorage.setItem('colorBandHistory', JSON.stringify(serializable));
+        } catch (error) {
+            console.warn('Failed to save history to localStorage:', error);
+        }
+    }
+    
+    clearHistory() {
+        if (confirm('Are you sure you want to clear all edit history? This action cannot be undone.')) {
+            this.history = [];
+            this.updateHistoryUI();
+            this.saveHistoryToStorage();
+        }
     }
 }
 
