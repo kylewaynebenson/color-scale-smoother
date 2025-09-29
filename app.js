@@ -1639,13 +1639,20 @@ class ColorBandEditor {
     restoreFromHistory(index) {
         if (index < 0 || index >= this.history.length) return;
         
-        // Remove all states after the selected one
-        this.history = this.history.slice(0, index + 1);
-        
+        // Get the state we want to restore to
         const state = this.history[index];
+        
+        // Restore the state
         this.restoreState(state);
-        this.updateHistoryUI();
-        this.saveHistoryToStorage();
+        
+        // Extract the original action name, removing any existing "Restored to:" prefixes
+        let originalAction = state.action;
+        if (originalAction.startsWith('Restored to: ')) {
+            originalAction = originalAction.replace(/^Restored to: /, '');
+        }
+        
+        // Add this as a new current state to preserve history
+        this.saveToHistory(`Restored to: ${originalAction}`);
     }
     
     restoreState(state) {
@@ -1734,17 +1741,31 @@ class ColorBandEditor {
     getTimeAgo(timestamp) {
         const now = new Date();
         const diffMs = now - timestamp;
-        const diffMins = Math.floor(diffMs / 60000);
         const diffHours = Math.floor(diffMs / 3600000);
         const diffDays = Math.floor(diffMs / 86400000);
         
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
-        if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+        // If within 24 hours, show HH:MM:SS format
+        if (diffHours < 24) {
+            const hours = timestamp.getHours().toString().padStart(2, '0');
+            const minutes = timestamp.getMinutes().toString().padStart(2, '0');
+            const seconds = timestamp.getSeconds().toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+        
+        // For older entries, show relative time
         if (diffDays === 1) return 'Yesterday';
         if (diffDays < 7) return `${diffDays} days ago`;
+        if (diffDays < 30) {
+            const weeks = Math.floor(diffDays / 7);
+            return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
+        }
+        if (diffDays < 365) {
+            const months = Math.floor(diffDays / 30);
+            return `${months} month${months === 1 ? '' : 's'} ago`;
+        }
         
-        return timestamp.toLocaleDateString();
+        const years = Math.floor(diffDays / 365);
+        return `${years} year${years === 1 ? '' : 's'} ago`;
     }
     
     // LocalStorage methods for history persistence
