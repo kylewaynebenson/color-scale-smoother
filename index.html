@@ -8,57 +8,81 @@
     <meta property="og:title" content="Color Band Smoother">
     <meta property="og:description" content="Professional tool for creating smooth color gradients with multiple interpolation algorithms">
     <meta property="og:type" content="website">
-    <title>Color Band Smoother - Professional Color Gradient Tool</title>
+    <title>Color Band Smoother</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+        <button class="theme-toggle-btn" id="themeToggle" aria-label="Toggle theme">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <svg class="moon-icon hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+        </button>
+    </div>
+
     <div class="app-layout">
         <div class="sidebar">
-            <h3>Smoothing Options</h3>
-            <div class="control-group">
-                <label for="bandCount">Number of Color Bands:</label>
-                <input type="range" id="bandCount" min="3" max="20" value="10">
-                <span id="bandCountValue">10</span>
+            <div class="sidebar-top">
+                <h3 class="hidden">Smoothing Options</h3>
+                <div class="control-group">
+                    <label for="bandCount">Number of Color Bands:</label>
+                    <input type="range" id="bandCount" min="3" max="20" value="10">
+                    <span id="bandCountValue">10</span>
+                </div>
+                
+                <div class="control-group">
+                    <label for="smoothingAlgorithm">Smoothing Algorithm:</label>
+                    <div class="algorithm-control-wrapper">
+                        <select id="smoothingAlgorithm">
+                            <option value="hsl">HSL Interpolation</option>
+                            <option value="lab">LAB Interpolation</option>
+                            <option value="rgb">RGB Linear</option>
+                            <option value="bezier">Bezier Curve</option>
+                        </select>
+                        <button id="reapplyAlgorithmBtn" class="btn-icon-small" title="Reapply smoothing algorithm">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p id="algorithmDescription" class="description">
+                        Interpolates between colors maintaining hue relationships for natural gradients.
+                    </p>
+                </div>
+                
+                <div class="control-group">
+                    <label for="smoothingStrength">Smoothing Strength:</label>
+                    <input type="range" id="smoothingStrength" min="0" max="1" step="0.1" value="1">
+                    <span id="strengthValue">1.0</span>
+                </div>
             </div>
             
-            <div class="control-group">
-                <label for="smoothingAlgorithm">Smoothing Algorithm:</label>
-                <div class="algorithm-control-wrapper">
-                    <select id="smoothingAlgorithm">
-                        <option value="hsl">HSL Interpolation</option>
-                        <option value="lab">LAB Interpolation</option>
-                        <option value="rgb">RGB Linear</option>
-                        <option value="bezier">Bezier Curve</option>
-                    </select>
-                    <button id="reapplyAlgorithmBtn" class="refresh-btn" title="Reapply smoothing algorithm">
+            <div class="sidebar-bottom">
+                <div class="control-group">
+                    <button id="importClipboardBtn" class="btn-small btn-secondary-small" title="Import colors from Figma clipboard data">
                         <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
+                            <path d="M19,20H4C2.89,20 2,19.1 2,18V6C2,4.89 2.89,4 4,4H10L12,6H19A2,2 0 0,1 21,8H21L4,8V18L6.14,10H23.21L20.93,18.5C20.7,19.37 19.92,20 19,20Z" />
                         </svg>
+                        Import from Clipboard
                     </button>
                 </div>
-                <p id="algorithmDescription" class="algorithm-description">
-                    Interpolates between colors maintaining hue relationships for natural gradients.
-                </p>
+                
+                <div class="control-group">
+                    <button id="copyUrlBtn" class="btn-small btn-secondary-small" title="Copy shareable URL">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18,16.08C17.24,16.08 16.56,16.38 16.04,16.85L8.91,12.7C8.96,12.47 9,12.24 9,12C9,11.76 8.96,11.53 8.91,11.3L15.96,7.19C16.5,7.69 17.21,8 18,8A3,3 0 0,0 21,5A3,3 0 0,0 18,2A3,3 0 0,0 15,5C15,5.24 15.04,5.47 15.09,5.7L8.04,9.81C7.5,9.31 6.79,9 6,9A3,3 0 0,0 3,12A3,3 0 0,0 6,15C6.79,15 7.5,14.69 8.04,14.19L15.16,18.34C15.11,18.55 15.08,18.77 15.08,19C15.08,20.61 16.39,21.91 18,21.91C19.61,21.91 20.92,20.6 20.92,19A2.92,2.92 0 0,0 18,16.08Z" />
+                        </svg>
+                        Share URL
+                    </button>
+                </div>
             </div>
-            
-            <div class="control-group">
-                <label for="smoothingStrength">Smoothing Strength:</label>
-                <input type="range" id="smoothingStrength" min="0" max="1" step="0.1" value="1">
-                <span id="strengthValue">1.0</span>
-            </div>
-            
-            <div class="control-group full-width">
-                <button id="copyUrlBtn" class="btn btn-icon" title="Copy shareable URL">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18,16.08C17.24,16.08 16.56,16.38 16.04,16.85L8.91,12.7C8.96,12.47 9,12.24 9,12C9,11.76 8.96,11.53 8.91,11.3L15.96,7.19C16.5,7.69 17.21,8 18,8A3,3 0 0,0 21,5A3,3 0 0,0 18,2A3,3 0 0,0 15,5C15,5.24 15.04,5.47 15.09,5.7L8.04,9.81C7.5,9.31 6.79,9 6,9A3,3 0 0,0 3,12A3,3 0 0,0 6,15C6.79,15 7.5,14.69 8.04,14.19L15.16,18.34C15.11,18.55 15.08,18.77 15.08,19C15.08,20.61 16.39,21.91 18,21.91C19.61,21.91 20.92,20.6 20.92,19A2.92,2.92 0 0,0 18,16.08Z" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-
-        <div class="main-content">
+        </div>        <div class="main-content">
             <div class="color-editor">
-                <h3>Color Band Editor</h3>
+                <h3 class="hidden">Color Band Editor</h3>
                 <div id="colorBandEditor" class="color-band-editor"></div>
             </div>
 
@@ -80,8 +104,8 @@
                             <svg class="graph-svg" viewBox="0 0 440 160" preserveAspectRatio="xMidYMid meet">
                                 <defs>
                                     <linearGradient id="backgroundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#f8f9fa"/>
-                                        <stop offset="100%" style="stop-color:#f8f9fa"/>
+                                        <stop offset="0%" class="graph-bg-stop"/>
+                                        <stop offset="100%" class="graph-bg-stop"/>
                                     </linearGradient>
                                 </defs>
                                 <rect width="100%" height="100%" fill="url(#backgroundGradient)"/>

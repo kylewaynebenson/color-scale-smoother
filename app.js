@@ -42,6 +42,9 @@ class ColorBandEditor {
     }
     
     setupEventListeners() {
+        // Theme toggle
+        this.setupThemeToggle();
+        
         // Band count slider
         const bandCountSlider = document.getElementById('bandCount');
         const bandCountValue = document.getElementById('bandCountValue');
@@ -79,6 +82,11 @@ class ColorBandEditor {
             this.copyShareableURL();
         });
         
+        // Import from clipboard button
+        document.getElementById('importClipboardBtn').addEventListener('click', () => {
+            this.importFromClipboard();
+        });
+        
         // Refresh/reapply algorithm button
         document.getElementById('reapplyAlgorithmBtn').addEventListener('click', () => {
             this.applySmoothing();
@@ -96,6 +104,57 @@ class ColorBandEditor {
         document.getElementById('copyGraphFigma').addEventListener('click', () => {
             this.copyGraphForFigma();
         });
+    }
+    
+    setupThemeToggle() {
+        // Initialize theme from localStorage or system preference
+        const savedTheme = localStorage.getItem('theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        let currentTheme = savedTheme || (systemDark ? 'dark' : 'light');
+        this.applyTheme(currentTheme);
+        
+        // Theme toggle button
+        const themeToggle = document.getElementById('themeToggle');
+        const sunIcon = themeToggle.querySelector('.sun-icon');
+        const moonIcon = themeToggle.querySelector('.moon-icon');
+        
+        // Update icons based on current theme
+        this.updateThemeIcons(currentTheme, sunIcon, moonIcon);
+        
+        themeToggle.addEventListener('click', () => {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            this.applyTheme(currentTheme);
+            this.updateThemeIcons(currentTheme, sunIcon, moonIcon);
+            localStorage.setItem('theme', currentTheme);
+        });
+        
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                currentTheme = e.matches ? 'dark' : 'light';
+                this.applyTheme(currentTheme);
+                this.updateThemeIcons(currentTheme, sunIcon, moonIcon);
+            }
+        });
+    }
+    
+    applyTheme(theme) {
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+    }
+    
+    updateThemeIcons(theme, sunIcon, moonIcon) {
+        if (theme === 'dark') {
+            sunIcon.classList.add('hidden');
+            moonIcon.classList.remove('hidden');
+        } else {
+            sunIcon.classList.remove('hidden');
+            moonIcon.classList.add('hidden');
+        }
     }
     
     adjustBandCount() {
@@ -191,9 +250,7 @@ class ColorBandEditor {
             
             const lockBtn = document.createElement('button');
             lockBtn.className = `lock-btn ${this.lockedColors.has(index) ? 'locked' : ''}`;
-            lockBtn.innerHTML = this.lockedColors.has(index) ? 
-                '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" /></svg>' :
-                '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H15V6C15,3.24 12.76,1 10,1S5,3.24 5,6H7A3,3 0 0,1 10,3A3,3 0 0,1 13,6V8H6A2,2 0 0,0 4,10V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V10A2,2 0 0,0 18,8Z" /></svg>';
+            lockBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" /></svg>';
             
             lockBtn.title = this.lockedColors.has(index) ? 'Click to unlock' : 'Click to lock';
             
@@ -750,6 +807,139 @@ class ColorBandEditor {
             console.error('Failed to copy graph: ', err);
             this.showCopyFeedback('copyGraphFigma', 'Copy failed');
         }
+    }
+    
+    async importFromClipboard() {
+        try {
+            // Check if clipboard API is available
+            if (!navigator.clipboard || !navigator.clipboard.readText) {
+                alert('Clipboard access is not available in your browser. Please use a modern browser and ensure the page is served over HTTPS.');
+                return;
+            }
+            
+            // Read clipboard content
+            const clipboardText = await navigator.clipboard.readText();
+            
+            if (!clipboardText || clipboardText.trim() === '') {
+                alert('Clipboard is empty. Please copy some Figma elements first.');
+                return;
+            }
+            
+            // Parse colors from clipboard data
+            const colors = this.parseColorsFromClipboard(clipboardText);
+            
+            if (colors.length === 0) {
+                alert('No valid colors found in clipboard data. Make sure you copied Figma rectangles or other elements with fill colors.');
+                return;
+            }
+            
+            if (colors.length > 20) {
+                const proceed = confirm(`Found ${colors.length} colors. This will be limited to 20 colors (the maximum). Continue?`);
+                if (!proceed) return;
+                colors.splice(20); // Limit to 20 colors
+            }
+            
+            // Update the application with imported colors
+            this.bandCount = colors.length;
+            this.colors = [...colors];
+            this.originalColors = [...colors];
+            this.lockedColors.clear(); // Clear all locks when importing
+            
+            // Update UI
+            document.getElementById('bandCount').value = this.bandCount;
+            document.getElementById('bandCountValue').textContent = this.bandCount;
+            
+            this.renderEditor();
+            this.updatePreview();
+            this.drawColorSpaceGraph();
+            this.updateURL();
+            
+            // Show success feedback
+            const button = document.getElementById('importClipboardBtn');
+            const originalText = button.innerHTML;
+            button.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" style="width: 16px; height: 16px; margin-right: 8px;">
+                <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
+            </svg>Imported ${colors.length} colors!`;
+            button.style.background = 'var(--color-success-600)';
+            button.style.color = 'white';
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.style.background = '';
+                button.style.color = '';
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Import failed:', error);
+            alert('Failed to import from clipboard. Make sure you have copied valid Figma data and granted clipboard permissions.');
+        }
+    }
+    
+    parseColorsFromClipboard(clipboardText) {
+        const colors = [];
+        const seenColors = new Set(); // Prevent duplicates
+        
+        // Common color patterns to match
+        const patterns = [
+            // Hex colors (#RRGGBB or #RGB)
+            /#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})\b/g,
+            // RGB colors rgb(r, g, b)
+            /rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/gi,
+            // RGBA colors rgba(r, g, b, a)
+            /rgba\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*[\d.]+\s*\)/gi,
+            // HSL colors hsl(h, s%, l%)
+            /hsl\s*\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)/gi,
+            // Common Figma patterns
+            /fill:\s*#([0-9A-Fa-f]{6})/g,
+            /color:\s*#([0-9A-Fa-f]{6})/g,
+            /background:\s*#([0-9A-Fa-f]{6})/g,
+        ];
+        
+        patterns.forEach(pattern => {
+            let match;
+            while ((match = pattern.exec(clipboardText)) !== null) {
+                let hexColor = null;
+                
+                if (match[0].startsWith('#')) {
+                    // Direct hex color
+                    hexColor = match[1].length === 3 ? 
+                        `#${match[1][0]}${match[1][0]}${match[1][1]}${match[1][1]}${match[1][2]}${match[1][2]}` : 
+                        `#${match[1]}`;
+                } else if (match[0].toLowerCase().startsWith('rgb')) {
+                    // RGB color - convert to hex
+                    const r = parseInt(match[1]);
+                    const g = parseInt(match[2]);
+                    const b = parseInt(match[3]);
+                    if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+                        hexColor = ColorUtils.rgbToHex(r, g, b);
+                    }
+                } else if (match[0].toLowerCase().startsWith('hsl')) {
+                    // HSL color - convert to hex
+                    const h = parseFloat(match[1]);
+                    const s = parseFloat(match[2]) / 100;
+                    const l = parseFloat(match[3]) / 100;
+                    const rgb = ColorUtils.hslToRgb(h, s, l);
+                    if (rgb) {
+                        hexColor = ColorUtils.rgbToHex(rgb.r, rgb.g, rgb.b);
+                    }
+                } else if (match[1]) {
+                    // Pattern with captured hex group
+                    hexColor = `#${match[1]}`;
+                }
+                
+                // Validate and add color
+                if (hexColor && this.isValidHexColor(hexColor) && !seenColors.has(hexColor.toLowerCase())) {
+                    colors.push(hexColor.toUpperCase());
+                    seenColors.add(hexColor.toLowerCase());
+                }
+            }
+        });
+        
+        return colors;
+    }
+    
+    isValidHexColor(hex) {
+        return /^#[0-9A-Fa-f]{6}$/.test(hex);
     }
 }
 
