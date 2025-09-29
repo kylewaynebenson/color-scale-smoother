@@ -1,5 +1,7 @@
 # Color Scale Smoother
 
+<img width="1000" height="auto" alt="Screenshot of color scale smoother app" src="https://github.com/user-attachments/assets/6bce0055-5edc-44aa-b54d-2557302ec894" />
+
 Create color scales, apply smoothing approaches, and visualize how your colors relate to each other in color space.
 
 ## Live Demo
