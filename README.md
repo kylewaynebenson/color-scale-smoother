@@ -1,6 +1,6 @@
-# Color Band Smoother
+# Color Scale Smoother
 
-A clean, professional web application for creating and smoothing color gradients with interactive controls and real-time visualization.
+Create color scales, apply smoothing approaches, and visualize how your colors relate to each other in color space.
 
 ## Live Demo
 
