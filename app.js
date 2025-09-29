@@ -114,6 +114,10 @@ class ColorBandEditor {
         document.getElementById('copySaturationGraphFigma').addEventListener('click', () => {
             this.copySaturationGraphForFigma();
         });
+        
+        document.getElementById('copyAllForFigma').addEventListener('click', () => {
+            this.copyAllForFigma();
+        });
     }
     
     setupThemeToggle() {
@@ -1250,6 +1254,157 @@ class ColorBandEditor {
         } catch (err) {
             console.error('Failed to copy saturation graph: ', err);
             this.showCopyFeedback('copySaturationGraphFigma', 'Copy failed');
+        }
+    }
+    
+    async copyAllForFigma() {
+        if (this.colors.length < 2) {
+            this.showCopyFeedback('copyAllForFigma', 'Need colors first');
+            return;
+        }
+        
+        // Create a comprehensive SVG that includes color bands and all three graphs
+        const frameWidth = 1200;
+        const frameHeight = 300;
+        const margin = 40;
+        const spacing = 20;
+        
+        // Calculate dimensions for each section
+        const colorBandHeight = 80;
+        const graphHeight = 160;
+        const graphWidth = (frameWidth - margin * 2 - spacing * 2) / 3; // Three graphs side by side
+        
+        let svgContent = `<svg width="${frameWidth}" height="${frameHeight}" viewBox="0 0 ${frameWidth} ${frameHeight}" xmlns="http://www.w3.org/2000/svg">`;
+        
+        // Background
+        svgContent += `<rect width="100%" height="100%" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>`;
+        
+        // Title
+        svgContent += `<text x="${frameWidth/2}" y="25" font-family="system-ui" font-size="14" font-weight="600" fill="#1e293b" text-anchor="middle">Color Scale Analysis</text>`;
+        
+        // Color bands section
+        const colorBandY = 50;
+        const bandWidth = (frameWidth - margin * 2) / this.colors.length;
+        
+        this.colors.forEach((color, index) => {
+            const x = margin + index * bandWidth;
+            svgContent += `<rect x="${x}" y="${colorBandY}" width="${bandWidth}" height="${colorBandHeight}" fill="${color}" stroke="none"/>`;
+            
+            // Add color labels
+            svgContent += `<text x="${x + bandWidth/2}" y="${colorBandY + colorBandHeight + 15}" font-family="system-ui" font-size="10" fill="#64748b" text-anchor="middle">${color}</text>`;
+        });
+        
+        // Graphs section
+        const graphY = colorBandY + colorBandHeight + 40;
+        
+        // Helper function to create graph data
+        const createGraphData = (values, minVal, maxVal, color, label, unit) => {
+            const points = [];
+            let pathData = '';
+            
+            for (let i = 0; i < values.length; i++) {
+                const x = (i / (values.length - 1)) * (graphWidth - 80) + 40;
+                const normalizedValue = (values[i] - minVal) / (maxVal - minVal);
+                const y = graphHeight - 30 - normalizedValue * (graphHeight - 60);
+                
+                points.push({ x, y, index: i });
+                
+                if (i === 0) {
+                    pathData += `M ${x} ${y}`;
+                } else {
+                    pathData += ` L ${x} ${y}`;
+                }
+            }
+            
+            return { points, pathData, minVal, maxVal, color, label, unit };
+        };
+        
+        // Lightness graph
+        const lightnessValues = this.colors.map(color => {
+            const hsl = ColorUtils.hexToHsl(color);
+            return hsl ? hsl.l : 0;
+        });
+        const minLightness = Math.min(...lightnessValues);
+        const maxLightness = Math.max(...lightnessValues);
+        const lightnessData = createGraphData(lightnessValues, minLightness, maxLightness, '#3b82f6', 'Lightness', '%');
+        
+        // Hue graph
+        const hueValues = this.colors.map(color => {
+            const hsl = ColorUtils.hexToHsl(color);
+            return hsl ? hsl.h : 0;
+        });
+        let minHue = Math.min(...hueValues);
+        let maxHue = Math.max(...hueValues);
+        if (minHue === maxHue) {
+            minHue = Math.max(0, maxHue - 30);
+            maxHue = Math.min(360, maxHue + 30);
+        }
+        const hueData = createGraphData(hueValues, minHue, maxHue, '#d97706', 'Hue', '°');
+        
+        // Saturation graph
+        const saturationValues = this.colors.map(color => {
+            const hsl = ColorUtils.hexToHsl(color);
+            return hsl ? hsl.s : 0;
+        });
+        let minSaturation = Math.min(...saturationValues);
+        let maxSaturation = Math.max(...saturationValues);
+        if (minSaturation === maxSaturation) {
+            minSaturation = Math.max(0, maxSaturation - 10);
+            maxSaturation = Math.min(100, maxSaturation + 10);
+        }
+        const saturationData = createGraphData(saturationValues, minSaturation, maxSaturation, '#059669', 'Saturation', '%');
+        
+        // Draw the three graphs
+        const graphsData = [lightnessData, hueData, saturationData];
+        
+        graphsData.forEach((data, graphIndex) => {
+            const graphX = margin + graphIndex * (graphWidth + spacing);
+            
+            // Graph background
+            svgContent += `<rect x="${graphX}" y="${graphY}" width="${graphWidth}" height="${graphHeight}" fill="#f8f9fa" stroke="#e2e8f0" stroke-width="1"/>`;
+            
+            // Grid lines
+            for (let i = 0; i <= 4; i++) {
+                const y = graphY + 20 + (i / 4) * (graphHeight - 40);
+                svgContent += `<line x1="${graphX + 30}" y1="${y}" x2="${graphX + graphWidth - 20}" y2="${y}" stroke="#e2e8f0" stroke-width="1"/>`;
+            }
+            
+            // Y-axis labels
+            svgContent += `<text x="${graphX + 20}" y="${graphY + 25}" font-family="system-ui" font-size="10" fill="#64748b" text-anchor="middle">${Math.round(data.maxVal)}${data.unit}</text>`;
+            svgContent += `<text x="${graphX + 20}" y="${graphY + graphHeight - 15}" font-family="system-ui" font-size="10" fill="#64748b" text-anchor="middle">${Math.round(data.minVal)}${data.unit}</text>`;
+            
+            // Graph title
+            svgContent += `<text x="${graphX + graphWidth/2}" y="${graphY + 15}" font-family="system-ui" font-size="12" font-weight="500" fill="#475569" text-anchor="middle">${data.label}</text>`;
+            
+            // X-axis label
+            svgContent += `<text x="${graphX + graphWidth/2}" y="${graphY + graphHeight - 5}" font-family="system-ui" font-size="10" fill="#64748b" text-anchor="middle">Color Index</text>`;
+            
+            // Translate path data to absolute coordinates
+            const translatedPath = data.pathData.replace(/([ML])\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)/g, (match, command, x, y) => {
+                return `${command} ${parseFloat(x) + graphX} ${parseFloat(y) + graphY}`;
+            });
+            
+            // Draw line
+            svgContent += `<path d="${translatedPath}" fill="none" stroke="${data.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+            
+            // Draw points
+            data.points.forEach(point => {
+                const isLocked = this.lockedColors.has(point.index);
+                const fillColor = isLocked ? data.color : '#ffffff';
+                const strokeColor = data.color;
+                
+                svgContent += `<circle cx="${point.x + graphX}" cy="${point.y + graphY}" r="3" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>`;
+            });
+        });
+        
+        svgContent += '</svg>';
+        
+        try {
+            await navigator.clipboard.writeText(svgContent);
+            this.showCopyFeedback('copyAllForFigma', 'All assets copied!');
+        } catch (err) {
+            console.error('Failed to copy all assets: ', err);
+            this.showCopyFeedback('copyAllForFigma', 'Copy failed');
         }
     }
     
