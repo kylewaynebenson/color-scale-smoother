@@ -59,6 +59,9 @@ class ColorBandEditor {
         // Theme toggle
         this.setupThemeToggle();
         
+        // Data view toggle
+        this.setupDataToggle();
+        
         // Band count slider
         const bandCountSlider = document.getElementById('bandCount');
         const bandCountValue = document.getElementById('bandCountValue');
@@ -180,6 +183,41 @@ class ColorBandEditor {
         } else {
             sunIcon.classList.remove('hidden');
             moonIcon.classList.add('hidden');
+        }
+    }
+    
+    setupDataToggle() {
+        const dataToggle = document.getElementById('dataToggle');
+        const expandIcon = dataToggle.querySelector('.expand-icon');
+        const collapseIcon = dataToggle.querySelector('.collapse-icon');
+        
+        const updateIcons = (isCompact) => {
+            if (isCompact) {
+                expandIcon.classList.add('hidden');
+                collapseIcon.classList.remove('hidden');
+            } else {
+                expandIcon.classList.remove('hidden');
+                collapseIcon.classList.add('hidden');
+            }
+        };
+        
+        dataToggle.addEventListener('click', () => {
+            document.body.classList.toggle('compact-view');
+            
+            // Save preference to localStorage
+            const isCompact = document.body.classList.contains('compact-view');
+            localStorage.setItem('compactView', isCompact);
+            updateIcons(isCompact);
+            
+            // Refresh preview to show/hide contrast indicators
+            this.updatePreview();
+        });
+        
+        // Load saved preference
+        const savedCompactView = localStorage.getItem('compactView');
+        if (savedCompactView === 'true') {
+            document.body.classList.add('compact-view');
+            updateIcons(true);
         }
     }
     
@@ -429,6 +467,66 @@ class ColorBandEditor {
         descriptionElement.textContent = this.algorithmDescriptions[algorithm];
     }
     
+    // Contrast calculation utilities
+    hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    }
+    
+    getLuminance(r, g, b) {
+        const toLinear = (c) => {
+            c = c / 255;
+            return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        };
+        return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+    }
+    
+    getContrastRatio(color1, color2) {
+        const rgb1 = this.hexToRgb(color1);
+        const rgb2 = this.hexToRgb(color2);
+        
+        if (!rgb1 || !rgb2) return 0;
+        
+        const lum1 = this.getLuminance(rgb1.r, rgb1.g, rgb1.b);
+        const lum2 = this.getLuminance(rgb2.r, rgb2.g, rgb2.b);
+        
+        const brightest = Math.max(lum1, lum2);
+        const darkest = Math.min(lum1, lum2);
+        
+        return (brightest + 0.05) / (darkest + 0.05);
+    }
+    
+    createContrastIndicator(backgroundColor) {
+        const blackContrast = this.getContrastRatio(backgroundColor, '#000000');
+        const whiteContrast = this.getContrastRatio(backgroundColor, '#ffffff');
+        
+        const blackAA = blackContrast >= 4.5;
+        const whiteAA = whiteContrast >= 4.5;
+        
+        // Only show if at least one passes AA
+        if (!blackAA && !whiteAA) return null;
+        
+        const indicator = document.createElement('div');
+        indicator.className = 'contrast-indicator';
+        
+        if (blackAA && whiteAA) {
+            // Both pass - show both
+            indicator.innerHTML = '<span style="color: #000">Aa</span> <span style="color: #fff">Aa</span>';
+        } else if (blackAA) {
+            // Only black passes
+            indicator.innerHTML = '<span style="color: #000">Aa</span>';
+        } else {
+            // Only white passes
+            indicator.innerHTML = '<span style="color: #fff">Aa</span>';
+        }
+        
+        return indicator;
+    }
+
     updatePreview() {
         const previewContainer = document.getElementById('colorBandPreview');
         previewContainer.innerHTML = '';
@@ -438,6 +536,14 @@ class ColorBandEditor {
             swatch.className = 'color-preview-swatch';
             swatch.style.backgroundColor = color;
             swatch.title = `${index}: ${color}${this.lockedColors.has(index) ? ' (locked)' : ''}`;
+            
+            // Add contrast accessibility indicators (only in expanded view)
+            if (!document.body.classList.contains('compact-view')) {
+                const contrastIndicator = this.createContrastIndicator(color);
+                if (contrastIndicator) {
+                    swatch.appendChild(contrastIndicator);
+                }
+            }
             
             // Add lock overlay if locked
             if (this.lockedColors.has(index)) {
