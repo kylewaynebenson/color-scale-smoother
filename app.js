@@ -62,26 +62,25 @@ class ColorBandEditor {
         // Data view toggle
         this.setupDataToggle();
         
-        // Band count slider
-        const bandCountSlider = document.getElementById('bandCount');
-        const bandCountValue = document.getElementById('bandCountValue');
+        // Band count input
+        const bandCountInput = document.getElementById('bandCount');
         
-        bandCountSlider.addEventListener('input', (e) => {
+        bandCountInput.addEventListener('input', (e) => {
             this.bandCount = parseInt(e.target.value);
-            bandCountValue.textContent = this.bandCount;
             this.adjustBandCount();
             this.updateURL(); // Update URL when band count changes
         });
         
-        // Smoothing strength slider - auto apply
-        const strengthSlider = document.getElementById('smoothingStrength');
-        const strengthValue = document.getElementById('strengthValue');
+        // Smoothing strength input - auto apply
+        const strengthInput = document.getElementById('smoothingStrength');
         
-        strengthSlider.addEventListener('input', (e) => {
-            strengthValue.textContent = parseFloat(e.target.value).toFixed(1);
+        strengthInput.addEventListener('input', (e) => {
             this.applySmoothing();
             this.updateURL(); // Update URL when strength changes
         });
+        
+        // Setup number input increment/decrement buttons
+        this.setupNumberInputControls();
         
         // Smoothing algorithm dropdown - auto apply
         const algorithmSelect = document.getElementById('smoothingAlgorithm');
@@ -102,6 +101,16 @@ class ColorBandEditor {
         // Import from clipboard button
         document.getElementById('importClipboardBtn').addEventListener('click', () => {
             this.importFromClipboard();
+        });
+        
+        // Import from file button
+        document.getElementById('importFileBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+        
+        // File input change event
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            this.importFromFile(e.target.files[0]);
         });
         
         // Refresh/reapply algorithm button
@@ -218,6 +227,73 @@ class ColorBandEditor {
         if (savedCompactView === 'true') {
             document.body.classList.add('compact-view');
             updateIcons(true);
+        }
+    }
+    
+    setupNumberInputControls() {
+        // Setup increment/decrement buttons for all number inputs
+        document.querySelectorAll('.number-input-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const targetId = button.dataset.target;
+                const input = document.getElementById(targetId);
+                const isIncrement = button.classList.contains('increment');
+                const isDecrement = button.classList.contains('decrement');
+                
+                if (!input) return;
+                
+                const currentValue = parseFloat(input.value) || 0;
+                const min = parseFloat(input.min) || 0;
+                const max = parseFloat(input.max) || 100;
+                const step = parseFloat(input.step) || 1;
+                
+                let newValue = currentValue;
+                
+                if (isIncrement && currentValue < max) {
+                    newValue = Math.min(currentValue + step, max);
+                } else if (isDecrement && currentValue > min) {
+                    newValue = Math.max(currentValue - step, min);
+                }
+                
+                if (newValue !== currentValue) {
+                    input.value = newValue;
+                    
+                    // Trigger input event to update the application
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                
+                // Update button states
+                this.updateNumberInputButtonStates(input);
+            });
+        });
+        
+        // Setup input validation and button state updates
+        document.querySelectorAll('.number-input').forEach(input => {
+            input.addEventListener('input', () => {
+                this.updateNumberInputButtonStates(input);
+            });
+            
+            // Initialize button states
+            this.updateNumberInputButtonStates(input);
+        });
+    }
+    
+    updateNumberInputButtonStates(input) {
+        const wrapper = input.closest('.number-input-wrapper');
+        if (!wrapper) return;
+        
+        const decrementBtn = wrapper.querySelector('.decrement');
+        const incrementBtn = wrapper.querySelector('.increment');
+        
+        const currentValue = parseFloat(input.value) || 0;
+        const min = parseFloat(input.min) || 0;
+        const max = parseFloat(input.max) || 100;
+        
+        if (decrementBtn) {
+            decrementBtn.disabled = currentValue <= min;
+        }
+        
+        if (incrementBtn) {
+            incrementBtn.disabled = currentValue >= max;
         }
     }
     
@@ -942,10 +1018,8 @@ class ColorBandEditor {
                     this.bandCount = colors.length;
                     
                     // Update DOM elements if they exist
-                    const bandCountSlider = document.getElementById('bandCount');
-                    const bandCountValue = document.getElementById('bandCountValue');
-                    if (bandCountSlider) bandCountSlider.value = this.bandCount;
-                    if (bandCountValue) bandCountValue.textContent = this.bandCount;
+                    const bandCountInput = document.getElementById('bandCount');
+                    if (bandCountInput) bandCountInput.value = this.bandCount;
                 }
             } catch (e) {
                 console.warn('Invalid colors in URL:', e);
@@ -1574,7 +1648,6 @@ class ColorBandEditor {
             
             // Update UI
             document.getElementById('bandCount').value = this.bandCount;
-            document.getElementById('bandCountValue').textContent = this.bandCount;
             
             this.renderEditor();
             this.updatePreview();
@@ -1670,6 +1743,151 @@ class ColorBandEditor {
     
     isValidHexColor(hex) {
         return /^#[0-9A-Fa-f]{6}$/.test(hex);
+    }
+    
+    async importFromFile(file) {
+        if (!file) return;
+        
+        try {
+            const fileText = await file.text();
+            let colors = [];
+            
+            // Determine file type and parse accordingly
+            const fileName = file.name.toLowerCase();
+            const isYaml = fileName.endsWith('.yaml') || fileName.endsWith('.yml');
+            
+            if (isYaml) {
+                colors = this.parseColorsFromYAML(fileText);
+            } else {
+                // Assume JSON
+                colors = this.parseColorsFromJSON(fileText);
+            }
+            
+            if (colors.length === 0) {
+                alert('No valid colors found in the file. Please check the format.');
+                return;
+            }
+            
+            if (colors.length > 20) {
+                const proceed = confirm(`Found ${colors.length} colors. This will be limited to 20 colors (the maximum). Continue?`);
+                if (!proceed) return;
+                colors.splice(20);
+            }
+            
+            // Update the application with imported colors
+            this.bandCount = colors.length;
+            this.colors = [...colors];
+            this.originalColors = [...colors];
+            this.lockedColors.clear();
+            
+            // Update UI
+            document.getElementById('bandCount').value = this.bandCount;
+            
+            this.renderEditor();
+            this.updatePreview();
+            this.drawColorSpaceGraph();
+            this.drawHueSpaceGraph();
+            this.drawSaturationSpaceGraph();
+            this.updateURL();
+            this.saveToHistory(`Imported ${colors.length} colors from ${file.name}`);
+            
+            // Show success feedback
+            const button = document.getElementById('importFileBtn');
+            const originalText = button.innerHTML;
+            button.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" style="width: 16px; height: 16px; margin-right: 8px;">
+                <path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
+            </svg>Imported ${colors.length} colors!`;
+            button.style.background = 'var(--color-success-600)';
+            button.style.color = 'white';
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.style.background = '';
+                button.style.color = '';
+            }, 2000);
+            
+        } catch (error) {
+            console.error('File import failed:', error);
+            alert(`Failed to import from file: ${error.message}`);
+        }
+        
+        // Clear the file input for next use
+        document.getElementById('fileInput').value = '';
+    }
+    
+    parseColorsFromJSON(jsonText) {
+        try {
+            const data = JSON.parse(jsonText);
+            return this.extractColorsFromData(data);
+        } catch (error) {
+            throw new Error('Invalid JSON format');
+        }
+    }
+    
+    parseColorsFromYAML(yamlText) {
+        try {
+            // Simple YAML parser for colors (handles basic structures)
+            const lines = yamlText.split('\n');
+            const colors = [];
+            
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith('#') || trimmedLine === '') continue;
+                
+                // Look for color values in various YAML formats
+                const colorMatch = trimmedLine.match(/(?:color|hex|value)?\s*:?\s*(#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{3})/i);
+                if (colorMatch) {
+                    const color = this.normalizeColor(colorMatch[1]);
+                    if (color && this.isValidHexColor(color)) {
+                        colors.push(color);
+                    }
+                }
+            }
+            
+            return colors;
+        } catch (error) {
+            throw new Error('Failed to parse YAML format');
+        }
+    }
+    
+    extractColorsFromData(data) {
+        const colors = [];
+        const visited = new Set();
+        
+        const extractRecursive = (obj) => {
+            if (typeof obj === 'string') {
+                const color = this.normalizeColor(obj);
+                if (color && this.isValidHexColor(color) && !visited.has(color.toLowerCase())) {
+                    colors.push(color);
+                    visited.add(color.toLowerCase());
+                }
+            } else if (Array.isArray(obj)) {
+                obj.forEach(extractRecursive);
+            } else if (obj && typeof obj === 'object') {
+                Object.values(obj).forEach(extractRecursive);
+            }
+        };
+        
+        extractRecursive(data);
+        return colors;
+    }
+    
+    normalizeColor(colorString) {
+        if (!colorString || typeof colorString !== 'string') return null;
+        
+        const trimmed = colorString.trim();
+        
+        // Handle hex colors
+        if (trimmed.startsWith('#')) {
+            if (trimmed.length === 4) {
+                // Convert #RGB to #RRGGBB
+                return '#' + trimmed[1] + trimmed[1] + trimmed[2] + trimmed[2] + trimmed[3] + trimmed[3];
+            } else if (trimmed.length === 7) {
+                return trimmed.toUpperCase();
+            }
+        }
+        
+        return null;
     }
     
     // History System Methods
@@ -1768,7 +1986,6 @@ class ColorBandEditor {
         
         // Update UI elements
         document.getElementById('bandCount').value = this.bandCount;
-        document.getElementById('bandCountValue').textContent = this.bandCount;
         
         // Re-render everything
         this.renderEditor();

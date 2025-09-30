@@ -42,9 +42,22 @@
             <div class="sidebar-top">
                 <h3 class="heading-xl hidden">Smoothing Options</h3>
                 <div class="control-group">
-                    <label for="bandCount">Number of Color Bands:</label>
-                    <input type="range" id="bandCount" min="3" max="20" value="10">
-                    <span id="bandCountValue">10</span>
+                    <div class="control-row">
+                        <label for="bandCount">Bands:</label>
+                        <div class="number-input-wrapper">
+                            <button class="number-input-btn decrement" data-target="bandCount" aria-label="Decrease band count">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19,13H5V11H19V13Z" />
+                                </svg>
+                            </button>
+                            <input type="number" id="bandCount" min="3" max="20" value="10" class="number-input">
+                            <button class="number-input-btn increment" data-target="bandCount" aria-label="Increase band count">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="control-group">
@@ -68,38 +81,67 @@
                 </div>
                 
                 <div class="control-group">
-                    <label for="smoothingStrength">Smoothing Strength:</label>
-                    <input type="range" id="smoothingStrength" min="0" max="1" step="0.1" value="1">
-                    <span id="strengthValue">1.0</span>
+                    <div class="control-row">
+                        <label for="smoothingStrength">Strength:</label>
+                        <div class="number-input-wrapper">
+                            <button class="number-input-btn decrement" data-target="smoothingStrength" aria-label="Decrease smoothing strength">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19,13H5V11H19V13Z" />
+                                </svg>
+                            </button>
+                            <input type="number" id="smoothingStrength" min="0" max="1" step="0.1" value="1.0" class="number-input">
+                            <button class="number-input-btn increment" data-target="smoothingStrength" aria-label="Increase smoothing strength">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             
             <div class="sidebar-bottom">
-                <div class="control-group">
-                    <button id="importClipboardBtn" class="btn-small btn-secondary-small" title="Import colors from Figma clipboard data">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19,20H4C2.89,20 2,19.1 2,18V6C2,4.89 2.89,4 4,4H10L12,6H19A2,2 0 0,1 21,8H21L4,8V18L6.14,10H23.21L20.93,18.5C20.7,19.37 19.92,20 19,20Z" />
-                        </svg>
-                        Import from Clipboard
-                    </button>
+                <!-- Import Section -->
+                <div class="sidebar-section">
+                    <h5>Import</h5>
+                    
+                    <div class="button-grid">
+                        <button id="importClipboardBtn" class="btn-small btn-secondary-small" title="Import colors from Figma clipboard data">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19,20H4C2.89,20 2,19.1 2,18V6C2,4.89 2.89,4 4,4H10L12,6H19A2,2 0 0,1 21,8H21L4,8V18L6.14,10H23.21L20.93,18.5C20.7,19.37 19.92,20 19,20Z" />
+                            </svg>
+                            Clipboard
+                        </button>
+                        
+                        <button id="importFileBtn" class="btn-small btn-secondary-small" title="Import colors from JSON/YAML file">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                            </svg>
+                            JSON/YAML
+                        </button>
+                    </div>
+                    <input type="file" id="fileInput" accept=".json,.yaml,.yml" style="display: none;">
                 </div>
                 
-                <div class="control-group">
-                    <button id="copyAllForFigma" class="btn-small btn-secondary-small" title="Copy all assets (colors + graphs) for Figma">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
-                        </svg>
-                        Copy All for Figma
-                    </button>
-                </div>
-                
-                <div class="control-group">
-                    <button id="copyUrlBtn" class="btn-small btn-secondary-small" title="Copy shareable URL">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M18,16.08C17.24,16.08 16.56,16.38 16.04,16.85L8.91,12.7C8.96,12.47 9,12.24 9,12C9,11.76 8.96,11.53 8.91,11.3L15.96,7.19C16.5,7.69 17.21,8 18,8A3,3 0 0,0 21,5A3,3 0 0,0 18,2A3,3 0 0,0 15,5C15,5.24 15.04,5.47 15.09,5.7L8.04,9.81C7.5,9.31 6.79,9 6,9A3,3 0 0,0 3,12A3,3 0 0,0 6,15C6.79,15 7.5,14.69 8.04,14.19L15.16,18.34C15.11,18.55 15.08,18.77 15.08,19C15.08,20.61 16.39,21.91 18,21.91C19.61,21.91 20.92,20.6 20.92,19A2.92,2.92 0 0,0 18,16.08Z" />
-                        </svg>
-                        Share URL
-                    </button>
+                <!-- Export Section -->
+                <div class="sidebar-section">
+                    <h5>Export</h5>
+                    
+                    <div class="button-grid">
+                        <button id="copyAllForFigma" class="btn-small btn-secondary-small" title="Copy all assets (colors + graphs) for Figma">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
+                            </svg>
+                            All for Figma
+                        </button>
+                        
+                        <button id="copyUrlBtn" class="btn-small btn-secondary-small" title="Copy shareable URL">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18,16.08C17.24,16.08 16.56,16.38 16.04,16.85L8.91,12.7C8.96,12.47 9,12.24 9,12C9,11.76 8.96,11.53 8.91,11.3L15.96,7.19C16.5,7.69 17.21,8 18,8A3,3 0 0,0 21,5A3,3 0 0,0 18,2A3,3 0 0,0 15,5C15,5.24 15.04,5.47 15.09,5.7L8.04,9.81C7.5,9.31 6.79,9 6,9A3,3 0 0,0 3,12A3,3 0 0,0 6,15C6.79,15 7.5,14.69 8.04,14.19L15.16,18.34C15.11,18.55 15.08,18.77 15.08,19C15.08,20.61 16.39,21.91 18,21.91C19.61,21.91 20.92,20.6 20.92,19A2.92,2.92 0 0,0 18,16.08Z" />
+                            </svg>
+                            Share URL
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>        

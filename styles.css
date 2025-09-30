@@ -343,6 +343,15 @@ h3 {
   margin-bottom: var(--space-5);
 }
 
+h5 {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-tertiary);
+  margin: 0 0 var(--space-2) 0;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+}
+
 /* Heading size variants */
 .heading-xl {
   font-size: var(--text-xl);
@@ -409,6 +418,104 @@ h3 {
   margin-top: auto;
   padding-top: var(--space-4);
   border-top: 1px solid var(--color-border);
+}
+
+.sidebar-section {
+  margin-bottom: var(--space-4);
+}
+
+.sidebar-section:last-child {
+  margin-bottom: 0;
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.button-grid .btn-small {
+  width: 100%;
+  font-size: var(--text-xs);
+  padding: var(--space-2) var(--space-1);
+}
+
+.button-grid .btn-small svg {
+  width: 14px;
+  height: 14px;
+  margin-right: var(--space-1);
+}
+
+/* Number Input Controls */
+.number-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+  background: var(--color-surface);
+  overflow: hidden;
+  transition: var(--transition-colors);
+  flex: 1;
+}
+
+.number-input-wrapper:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-alpha);
+}
+
+.number-input {
+  flex: 1;
+  flex-shrink: 1;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-primary);
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.number-input:focus {
+  outline: none;
+}
+
+.number-input-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  border: none;
+  background: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.number-input-btn:hover {
+  background: var(--color-surface-tertiary);
+  color: var(--color-text-primary);
+}
+
+.number-input-btn:active {
+  background: var(--color-accent);
+  color: var(--color-white);
+}
+
+.number-input-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.number-input-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.number-input-btn:disabled:hover {
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
 }
 
 .main-content {
@@ -647,6 +754,19 @@ h3 {
   letter-spacing: var(--tracking-tight);
 }
 
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.control-row label {
+  margin-bottom: 0;
+  flex-shrink: 0;
+  min-width: 100px;
+  max-width: 66%;
+}
+
 .control-group input[type="range"] {
   width: 100%;
   margin-bottom: var(--space-2);
@@ -689,10 +809,11 @@ h3 {
 
 .control-group select {
   width: 100%;
-  padding: var(--space-3) var(--space-3);
+  padding: var(--space-2-5) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--text-xs);
+  font-family: var(--font-mono);
   background: var(--color-surface);
   color: var(--color-text);
   transition: var(--transition-all);
@@ -1539,8 +1660,15 @@ body.compact-view .color-band-editor {
   gap: var(--space-3);
 }
 
+body.compact-view .color-preview-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 body.compact-view .color-band-preview {
-  height: var(--space-16);
+  height: 100%;
+  flex: 1;
 }
 
 body.compact-view .color-input-group {
