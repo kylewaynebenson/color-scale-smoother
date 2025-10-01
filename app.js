@@ -93,9 +93,9 @@ class ColorBandEditor {
         // Initialize algorithm description
         this.updateAlgorithmDescription(algorithmSelect.value);
         
-        // Copy URL button
-        document.getElementById('copyUrlBtn').addEventListener('click', () => {
-            this.copyShareableURL();
+        // Export JSON/YAML button
+        document.getElementById('exportJsonBtn').addEventListener('click', () => {
+            this.exportAsFile();
         });
         
         // Import from clipboard button
@@ -1099,6 +1099,45 @@ class ColorBandEditor {
         } catch (err) {
             console.error('Failed to copy URL: ', err);
             this.showCopyFeedback('copyUrlBtn', 'Copy failed');
+        }
+    }
+    
+    exportAsFile() {
+        try {
+            // Create export data
+            const exportData = {
+                metadata: {
+                    title: "Color Scale Export",
+                    exportDate: new Date().toISOString(),
+                    totalColors: this.colors.length,
+                    algorithm: document.getElementById('smoothingAlgorithm').value,
+                    strength: parseFloat(document.getElementById('smoothingStrength').value)
+                },
+                colors: this.colors,
+                originalColors: this.originalColors,
+                lockedIndices: Array.from(this.lockedColors)
+            };
+            
+            // Convert to JSON string
+            const jsonString = JSON.stringify(exportData, null, 2);
+            
+            // Create and trigger download
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `color-scale-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            // Show success feedback
+            this.showCopyFeedback('exportJsonBtn', 'File downloaded!');
+            
+        } catch (error) {
+            console.error('Export failed:', error);
+            this.showCopyFeedback('exportJsonBtn', 'Export failed');
         }
     }
     

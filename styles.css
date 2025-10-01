@@ -443,7 +443,6 @@ h5 {
 .button-grid .btn-small svg {
   width: 14px;
   height: 14px;
-  margin-right: var(--space-1);
 }
 
 /* Number Input Controls */
@@ -621,7 +620,7 @@ h5 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   transition: var(--transition-all);
   letter-spacing: var(--tracking-tight);
   line-height: var(--leading-normal);
