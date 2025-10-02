@@ -9,17 +9,36 @@
     <meta property="og:description" content="Professional tool for creating smooth color gradients with multiple interpolation algorithms">
     <meta property="og:type" content="website">
     <title>Color Band Smoother</title>
-    <link rel="stylesheet" href="styles.css?v=20251001">
+    <script>
+        // Cache buster for scripts and CSS
+        document.addEventListener("DOMContentLoaded", function() {
+            //unix timestamp for cache busting
+            const cacheBuster = Date.now();
+            // Update CSS link
+            const css = document.querySelector('link[rel="stylesheet"][href^="styles.css"]');
+            if (css) {
+                css.href = "styles.css?v=" + cacheBuster;
+            }
+            // Update JS scripts
+            ["colorUtils.js", "smoothingAlgorithms.js", "app.js"].forEach(src => {
+                const script = document.querySelector(`script[src^="${src}"]`);
+                if (script) {
+                    script.src = src + "?v=" + cacheBuster;
+                }
+            });
+        });
+    </script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <!-- Bottom Right Controls -->
     <div class="bottom-controls">
-        <button class="control-btn" id="historyToggle" aria-label="Toggle history" title="Show edit history">
+        <button class="btn btn--xs btn--secondary" id="historyToggle" aria-label="Toggle history" title="Show edit history">
             <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3" />
             </svg>
         </button>
-        <button class="control-btn" id="dataToggle" aria-label="Toggle data view" title="Toggle compact data view">
+        <button class="btn btn--xs btn--secondary" id="dataToggle" aria-label="Toggle data view" title="Toggle compact data view">
             <svg class="expand-icon" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M10,21V19H6.41L10.91,14.5L9.5,13.09L5,17.59V14H3V21H10M14.5,10.91L19,6.41V10H21V3H14V5H17.59L13.09,9.5L14.5,10.91Z" />
             </svg>
@@ -27,7 +46,7 @@
                 <path d="M14,14H19V16H16V19H14V14M5,14H10V19H8V16H5V14M8,5H10V10H5V8H8V5M19,8V10H14V5H16V8H19Z" />
             </svg>
         </button>
-        <button class="control-btn" id="themeToggle" aria-label="Toggle theme">
+        <button class="btn btn--xs btn--secondary" id="themeToggle" aria-label="Toggle theme">
             <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
@@ -39,19 +58,19 @@
 
     <div class="app-layout">
         <div class="sidebar">
-            <div class="sidebar-top">
-                <h3 class="heading-xl hidden">Smoothing Options</h3>
-                <div class="control-group">
+            <div class="sidebar-section sidebar-top">
+                <h5>Settings</h5>
+                <div class="input-group">
                     <div class="control-row">
-                        <label for="bandCount">Bands:</label>
+                        <label class="h4" for="bandCount">Bands:</label>
                         <div class="number-input-wrapper">
-                            <button class="number-input-btn decrement" data-target="bandCount" aria-label="Decrease band count">
+                            <button class="btn btn--sm btn--secondary" data-target="bandCount" aria-label="Decrease band count">
                                 <svg viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M19,13H5V11H19V13Z" />
                                 </svg>
                             </button>
-                            <input type="number" id="bandCount" min="3" max="20" value="10" class="number-input">
-                            <button class="number-input-btn increment" data-target="bandCount" aria-label="Increase band count">
+                            <input type="number" id="bandCount" min="3" max="20" value="10" class="input input--number">
+                            <button class="btn btn--sm btn--secondary" data-target="bandCount" aria-label="Increase band count">
                                 <svg viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
                                 </svg>
@@ -60,37 +79,37 @@
                     </div>
                 </div>
                 
-                <div class="control-group">
-                    <label for="smoothingAlgorithm">Smoothing Algorithm:</label>
+                <div class="input-group">
+                    <label class="h4" for="smoothingAlgorithm">Smoothing Algorithm:</label>
                     <div class="algorithm-control-wrapper">
-                        <select id="smoothingAlgorithm">
+                        <select id="smoothingAlgorithm" class="input input--select">
                             <option value="hsl">HSL Interpolation</option>
                             <option value="lab">LAB Interpolation</option>
                             <option value="rgb">RGB Linear</option>
                             <option value="bezier">Bezier Curve</option>
                         </select>
-                        <button id="reapplyAlgorithmBtn" class="btn-icon-small" title="Reapply smoothing algorithm">
+                        <button id="reapplyAlgorithmBtn" class="btn btn--sm btn--secondary" title="Reapply smoothing algorithm">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
                             </svg>
                         </button>
                     </div>
-                    <p id="algorithmDescription" class="description">
+                    <p id="algorithmDescription" class="h6">
                         Interpolates between colors maintaining hue relationships for natural gradients.
                     </p>
                 </div>
                 
-                <div class="control-group">
+                <div class="input-group">
                     <div class="control-row">
-                        <label for="smoothingStrength">Strength:</label>
+                        <label class="h4" for="smoothingStrength">Strength:</label>
                         <div class="number-input-wrapper">
-                            <button class="number-input-btn decrement" data-target="smoothingStrength" aria-label="Decrease smoothing strength">
+                            <button class="btn btn--sm btn--secondary" data-target="smoothingStrength" aria-label="Decrease smoothing strength">
                                 <svg viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M19,13H5V11H19V13Z" />
                                 </svg>
                             </button>
-                            <input type="number" id="smoothingStrength" min="0" max="1" step="0.1" value="1.0" class="number-input">
-                            <button class="number-input-btn increment" data-target="smoothingStrength" aria-label="Increase smoothing strength">
+                            <input type="number" id="smoothingStrength" min="0" max="1" step="0.1" value="1.0" class="input input--number">
+                            <button class="btn btn--sm btn--secondary" data-target="smoothingStrength" aria-label="Increase smoothing strength">
                                 <svg viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
                                 </svg>
@@ -100,20 +119,68 @@
                 </div>
             </div>
             
-            <div class="sidebar-bottom">
+            <!-- Audit Section -->
+            <div class="sidebar-section">
+                <h5>Audit</h5>
+                
+                <div class="input-group">
+                    <div class="audit-toggle">
+                        <input type="checkbox" id="contrastRatio" class="checkbox">
+                        <label class="h4" for="contrastRatio" class="label" title="WCAG accessibility compliance">
+                            <span class="label__text">AA Contrast Ratio</span>
+                        </label>
+                    </div>
+                    
+                    <div class="audit-toggle">
+                        <input type="checkbox" id="tailwindComparison" class="checkbox">
+                        <label class="h4" for="tailwindComparison" class="label" title="Compare against Tailwind colors">
+                            <span class="label__text">Tailwind Comparison</span>
+                        </label>
+                    </div>
+                    
+                    <div class="control-row tailwind-control" id="tailwindControl" style="display: none;">
+                        <label class="h4" for="tailwindColorSelect">Color:</label>
+                        <select id="tailwindColorSelect" class="input input--select">
+                            <option value="red">Red</option>
+                            <option value="orange">Orange</option>
+                            <option value="amber">Amber</option>
+                            <option value="yellow">Yellow</option>
+                            <option value="lime">Lime</option>
+                            <option value="green">Green</option>
+                            <option value="emerald">Emerald</option>
+                            <option value="teal">Teal</option>
+                            <option value="cyan">Cyan</option>
+                            <option value="sky">Sky</option>
+                            <option value="blue">Blue</option>
+                            <option value="indigo">Indigo</option>
+                            <option value="violet">Violet</option>
+                            <option value="purple">Purple</option>
+                            <option value="fuchsia">Fuchsia</option>
+                            <option value="pink">Pink</option>
+                            <option value="rose">Rose</option>
+                            <option value="slate">Slate</option>
+                            <option value="gray">Gray</option>
+                            <option value="zinc">Zinc</option>
+                            <option value="neutral">Neutral</option>
+                            <option value="stone">Stone</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-section sidebar-bottom">
                 <!-- Import Section -->
-                <div class="sidebar-section">
                     <h5>Import</h5>
                     
-                    <div class="button-grid">
-                        <button id="importClipboardBtn" class="btn-small btn-secondary-small" title="Import colors from Figma clipboard data">
+                    <div class="grid grid--2-col">
+                        <button id="importClipboardBtn" class="btn btn--md btn--secondary" title="Import colors from Figma clipboard data">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M19,20H4C2.89,20 2,19.1 2,18V6C2,4.89 2.89,4 4,4H10L12,6H19A2,2 0 0,1 21,8H21L4,8V18L6.14,10H23.21L20.93,18.5C20.7,19.37 19.92,20 19,20Z" />
                             </svg>
                             Clipboard
                         </button>
                         
-                        <button id="importFileBtn" class="btn-small btn-secondary-small" title="Import colors from JSON/YAML file">
+                        <button id="importFileBtn" class="btn btn--md btn--secondary" title="Import colors from JSON/YAML file">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
                             </svg>
@@ -121,27 +188,24 @@
                         </button>
                     </div>
                     <input type="file" id="fileInput" accept=".json,.yaml,.yml" style="display: none;">
-                </div>
                 
                 <!-- Export Section -->
-                <div class="sidebar-section">
-                    <h5>Export</h5>
+                <h5>Export</h5>
+                
+                <div class="grid grid--2-col">
+                    <button id="copyAllForFigma" class="btn btn--md btn--secondary" title="Copy all assets (colors + graphs) for Figma">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M11.2001 3.28H8.84008C7.53669 3.28 6.48008 4.33662 6.48008 5.64C6.48008 6.94338 7.53669 8 8.84008 8H11.2001V3.28ZM11.2001 1.68H12.8001H15.1601C17.3472 1.68 19.12 3.45277 19.12 5.64C19.12 6.93061 18.5027 8.07706 17.5471 8.8C18.5027 9.52294 19.12 10.6694 19.12 11.96C19.12 14.1471 17.3472 15.92 15.1601 15.92C14.2758 15.92 13.4592 15.6302 12.8001 15.1403V15.92L12.8001 18.28C12.8001 20.4671 11.0272 22.24 8.84008 22.24C6.65294 22.24 4.88008 20.4671 4.88008 18.28C4.88008 16.9893 5.49741 15.8429 6.45307 15.12C5.49741 14.3971 4.88008 13.2506 4.88008 11.96C4.88008 10.6694 5.4975 9.52294 6.45311 8.8C5.4975 8.07706 4.88008 6.93061 4.88008 5.64C4.88008 3.45277 6.65294 1.68 8.84008 1.68H11.2001ZM12.8001 3.28V8H15.1601C16.4635 8 17.52 6.94338 17.52 5.64C17.52 4.33662 16.4635 3.28 15.1601 3.28H12.8001ZM8.84008 14.32H11.2001L11.2001 11.9661L11.2001 11.96L11.2001 11.9539V9.6H8.84008C7.53669 9.6 6.48008 10.6566 6.48008 11.96C6.48008 13.2603 7.53163 14.3149 8.83072 14.32L8.84008 14.32ZM6.48008 18.28C6.48008 16.9797 7.53163 15.9251 8.83072 15.92L8.84008 15.92H11.2001L11.2001 18.28C11.2001 19.5834 10.1435 20.64 8.84008 20.64C7.53669 20.64 6.48008 19.5834 6.48008 18.28ZM12.8001 11.9553C12.8026 10.6541 13.8582 9.6 15.1601 9.6C16.4635 9.6 17.52 10.6566 17.52 11.96C17.52 13.2634 16.4635 14.32 15.1601 14.32C13.8582 14.32 12.8026 13.2659 12.8001 11.9647V11.9553Z" />
+                        </svg>
+                        Editable
+                    </button>
                     
-                    <div class="button-grid">
-                        <button id="copyAllForFigma" class="btn-small btn-secondary-small" title="Copy all assets (colors + graphs) for Figma">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M11.2001 3.28H8.84008C7.53669 3.28 6.48008 4.33662 6.48008 5.64C6.48008 6.94338 7.53669 8 8.84008 8H11.2001V3.28ZM11.2001 1.68H12.8001H15.1601C17.3472 1.68 19.12 3.45277 19.12 5.64C19.12 6.93061 18.5027 8.07706 17.5471 8.8C18.5027 9.52294 19.12 10.6694 19.12 11.96C19.12 14.1471 17.3472 15.92 15.1601 15.92C14.2758 15.92 13.4592 15.6302 12.8001 15.1403V15.92L12.8001 18.28C12.8001 20.4671 11.0272 22.24 8.84008 22.24C6.65294 22.24 4.88008 20.4671 4.88008 18.28C4.88008 16.9893 5.49741 15.8429 6.45307 15.12C5.49741 14.3971 4.88008 13.2506 4.88008 11.96C4.88008 10.6694 5.4975 9.52294 6.45311 8.8C5.4975 8.07706 4.88008 6.93061 4.88008 5.64C4.88008 3.45277 6.65294 1.68 8.84008 1.68H11.2001ZM12.8001 3.28V8H15.1601C16.4635 8 17.52 6.94338 17.52 5.64C17.52 4.33662 16.4635 3.28 15.1601 3.28H12.8001ZM8.84008 14.32H11.2001L11.2001 11.9661L11.2001 11.96L11.2001 11.9539V9.6H8.84008C7.53669 9.6 6.48008 10.6566 6.48008 11.96C6.48008 13.2603 7.53163 14.3149 8.83072 14.32L8.84008 14.32ZM6.48008 18.28C6.48008 16.9797 7.53163 15.9251 8.83072 15.92L8.84008 15.92H11.2001L11.2001 18.28C11.2001 19.5834 10.1435 20.64 8.84008 20.64C7.53669 20.64 6.48008 19.5834 6.48008 18.28ZM12.8001 11.9553C12.8026 10.6541 13.8582 9.6 15.1601 9.6C16.4635 9.6 17.52 10.6566 17.52 11.96C17.52 13.2634 16.4635 14.32 15.1601 14.32C13.8582 14.32 12.8026 13.2659 12.8001 11.9647V11.9553Z" />
-                            </svg>
-                            Editable
-                        </button>
-                        
-                        <button id="exportJsonBtn" class="btn-small btn-secondary-small" title="Export colors as JSON/YAML file">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M14,2L20,8V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2H14M18,20V9H13V4H6V20H18Z" />
-                            </svg>
-                            JSON/YAML
-                        </button>
-                    </div>
+                    <button id="exportJsonBtn" class="btn btn--md btn--secondary" title="Export colors as JSON/YAML file">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14,2L20,8V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2H14M18,20V9H13V4H6V20H18Z" />
+                        </svg>
+                        JSON/YAML
+                    </button>
                 </div>
             </div>
         </div>        
@@ -153,16 +217,20 @@
 
             <div class="color-preview-container">
                 <div id="colorBandPreview" class="color-band-preview"></div>
-                <div class="copy-buttons">
-                    <button id="copyFigma" class="copy-btn">Copy for Figma</button>
-                    <button id="copyList" class="copy-btn">Copy comma separated list</button>
-                </div>
+                <div class="tailwind-comparison-container color-band-preview" id="tailwindComparisonContainer" style="display: none;">
+                    <div id="tailwindBandPreview" class="tailwind-band-preview"></div>
+                </div>    
             </div>
             <div class="graphs-container">
                 <div class="color-graph-container">
                     <div class="graph-header">
-                        <div class="graph-title">Lightness relationship</div>
-                        <button id="copyGraphFigma" class="copy-btn graph-copy-btn">Copy for Figma</button>
+                        <div class="text--base">Lightness relationship</div>
+                        <button id="copyGraphFigma" class="btn btn--sm btn--secondary graph-copy-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M11.2001 3.28H8.84008C7.53669 3.28 6.48008 4.33662 6.48008 5.64C6.48008 6.94338 7.53669 8 8.84008 8H11.2001V3.28ZM11.2001 1.68H12.8001H15.1601C17.3472 1.68 19.12 3.45277 19.12 5.64C19.12 6.93061 18.5027 8.07706 17.5471 8.8C18.5027 9.52294 19.12 10.6694 19.12 11.96C19.12 14.1471 17.3472 15.92 15.1601 15.92C14.2758 15.92 13.4592 15.6302 12.8001 15.1403V15.92L12.8001 18.28C12.8001 20.4671 11.0272 22.24 8.84008 22.24C6.65294 22.24 4.88008 20.4671 4.88008 18.28C4.88008 16.9893 5.49741 15.8429 6.45307 15.12C5.49741 14.3971 4.88008 13.2506 4.88008 11.96C4.88008 10.6694 5.4975 9.52294 6.45311 8.8C5.4975 8.07706 4.88008 6.93061 4.88008 5.64C4.88008 3.45277 6.65294 1.68 8.84008 1.68H11.2001ZM12.8001 3.28V8H15.1601C16.4635 8 17.52 6.94338 17.52 5.64C17.52 4.33662 16.4635 3.28 15.1601 3.28H12.8001ZM8.84008 14.32H11.2001L11.2001 11.9661L11.2001 11.96L11.2001 11.9539V9.6H8.84008C7.53669 9.6 6.48008 10.6566 6.48008 11.96C6.48008 13.2603 7.53163 14.3149 8.83072 14.32L8.84008 14.32ZM6.48008 18.28C6.48008 16.9797 7.53163 15.9251 8.83072 15.92L8.84008 15.92H11.2001L11.2001 18.28C11.2001 19.5834 10.1435 20.64 8.84008 20.64C7.53669 20.64 6.48008 19.5834 6.48008 18.28ZM12.8001 11.9553C12.8026 10.6541 13.8582 9.6 15.1601 9.6C16.4635 9.6 17.52 10.6566 17.52 11.96C17.52 13.2634 16.4635 14.32 15.1601 14.32C13.8582 14.32 12.8026 13.2659 12.8001 11.9647V11.9553Z" />
+                            </svg>
+
+                        </button>
                     </div>
                     <div id="colorSpaceGraph" class="color-space-graph">
                         <div class="graph-content">
@@ -196,8 +264,13 @@
                 </div>
                 <div class="color-graph-container">
                     <div class="graph-header">
-                        <div class="graph-title">Hue relationship</div>
-                        <button id="copyHueGraphFigma" class="copy-btn graph-copy-btn">Copy for Figma</button>
+                        <div class="text--base">Hue relationship</div>
+                        <button id="copyHueGraphFigma" class="btn btn--sm btn--secondary graph-copy-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M11.2001 3.28H8.84008C7.53669 3.28 6.48008 4.33662 6.48008 5.64C6.48008 6.94338 7.53669 8 8.84008 8H11.2001V3.28ZM11.2001 1.68H12.8001H15.1601C17.3472 1.68 19.12 3.45277 19.12 5.64C19.12 6.93061 18.5027 8.07706 17.5471 8.8C18.5027 9.52294 19.12 10.6694 19.12 11.96C19.12 14.1471 17.3472 15.92 15.1601 15.92C14.2758 15.92 13.4592 15.6302 12.8001 15.1403V15.92L12.8001 18.28C12.8001 20.4671 11.0272 22.24 8.84008 22.24C6.65294 22.24 4.88008 20.4671 4.88008 18.28C4.88008 16.9893 5.49741 15.8429 6.45307 15.12C5.49741 14.3971 4.88008 13.2506 4.88008 11.96C4.88008 10.6694 5.4975 9.52294 6.45311 8.8C5.4975 8.07706 4.88008 6.93061 4.88008 5.64C4.88008 3.45277 6.65294 1.68 8.84008 1.68H11.2001ZM12.8001 3.28V8H15.1601C16.4635 8 17.52 6.94338 17.52 5.64C17.52 4.33662 16.4635 3.28 15.1601 3.28H12.8001ZM8.84008 14.32H11.2001L11.2001 11.9661L11.2001 11.96L11.2001 11.9539V9.6H8.84008C7.53669 9.6 6.48008 10.6566 6.48008 11.96C6.48008 13.2603 7.53163 14.3149 8.83072 14.32L8.84008 14.32ZM6.48008 18.28C6.48008 16.9797 7.53163 15.9251 8.83072 15.92L8.84008 15.92H11.2001L11.2001 18.28C11.2001 19.5834 10.1435 20.64 8.84008 20.64C7.53669 20.64 6.48008 19.5834 6.48008 18.28ZM12.8001 11.9553C12.8026 10.6541 13.8582 9.6 15.1601 9.6C16.4635 9.6 17.52 10.6566 17.52 11.96C17.52 13.2634 16.4635 14.32 15.1601 14.32C13.8582 14.32 12.8026 13.2659 12.8001 11.9647V11.9553Z" />
+                            </svg>
+
+                        </button>
                     </div>
                     <div id="hueSpaceGraph" class="color-space-graph">
                         <div class="graph-content">
@@ -232,8 +305,13 @@
                 </div>
                 <div class="color-graph-container">
                     <div class="graph-header">
-                        <div class="graph-title">Saturation relationship</div>
-                        <button id="copySaturationGraphFigma" class="copy-btn graph-copy-btn">Copy for Figma</button>
+                        <div class="text--base">Saturation relationship</div>
+                        <button id="copySaturationGraphFigma" class="btn btn--sm btn--secondary graph-copy-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M11.2001 3.28H8.84008C7.53669 3.28 6.48008 4.33662 6.48008 5.64C6.48008 6.94338 7.53669 8 8.84008 8H11.2001V3.28ZM11.2001 1.68H12.8001H15.1601C17.3472 1.68 19.12 3.45277 19.12 5.64C19.12 6.93061 18.5027 8.07706 17.5471 8.8C18.5027 9.52294 19.12 10.6694 19.12 11.96C19.12 14.1471 17.3472 15.92 15.1601 15.92C14.2758 15.92 13.4592 15.6302 12.8001 15.1403V15.92L12.8001 18.28C12.8001 20.4671 11.0272 22.24 8.84008 22.24C6.65294 22.24 4.88008 20.4671 4.88008 18.28C4.88008 16.9893 5.49741 15.8429 6.45307 15.12C5.49741 14.3971 4.88008 13.2506 4.88008 11.96C4.88008 10.6694 5.4975 9.52294 6.45311 8.8C5.4975 8.07706 4.88008 6.93061 4.88008 5.64C4.88008 3.45277 6.65294 1.68 8.84008 1.68H11.2001ZM12.8001 3.28V8H15.1601C16.4635 8 17.52 6.94338 17.52 5.64C17.52 4.33662 16.4635 3.28 15.1601 3.28H12.8001ZM8.84008 14.32H11.2001L11.2001 11.9661L11.2001 11.96L11.2001 11.9539V9.6H8.84008C7.53669 9.6 6.48008 10.6566 6.48008 11.96C6.48008 13.2603 7.53163 14.3149 8.83072 14.32L8.84008 14.32ZM6.48008 18.28C6.48008 16.9797 7.53163 15.9251 8.83072 15.92L8.84008 15.92H11.2001L11.2001 18.28C11.2001 19.5834 10.1435 20.64 8.84008 20.64C7.53669 20.64 6.48008 19.5834 6.48008 18.28ZM12.8001 11.9553C12.8026 10.6541 13.8582 9.6 15.1601 9.6C16.4635 9.6 17.52 10.6566 17.52 11.96C17.52 13.2634 16.4635 14.32 15.1601 14.32C13.8582 14.32 12.8026 13.2659 12.8001 11.9647V11.9553Z" />
+                            </svg>
+
+                        </button>
                     </div>
                     <div id="saturationSpaceGraph" class="color-space-graph">
                         <div class="graph-content">

@@ -10,6 +10,9 @@ class ColorBandEditor {
         this.maxHistorySize = 50;
         this.isHistoryOpen = false;
         
+        // Track if user manually selected Tailwind color
+        this.tailwindColorManuallySelected = false;
+        
         // Algorithm descriptions
         this.algorithmDescriptions = {
             'hsl': 'Interpolates between colors maintaining hue relationships for natural gradients.',
@@ -20,6 +23,7 @@ class ColorBandEditor {
         
         this.initializeDefaultColors();
         this.setupEventListeners();
+        this.setupAuditToggles();
         this.setupHistorySystem();
         this.loadHistoryFromStorage();
         this.loadFromURL(); // Load state from URL if present
@@ -118,15 +122,7 @@ class ColorBandEditor {
             this.applySmoothing();
         });
         
-        // Copy buttons
-        document.getElementById('copyFigma').addEventListener('click', () => {
-            this.copyForFigma();
-        });
-        
-        document.getElementById('copyList').addEventListener('click', () => {
-            this.copyCommaList();
-        });
-        
+        // Copy buttons for graphs
         document.getElementById('copyGraphFigma').addEventListener('click', () => {
             this.copyGraphForFigma();
         });
@@ -232,12 +228,10 @@ class ColorBandEditor {
     
     setupNumberInputControls() {
         // Setup increment/decrement buttons for all number inputs
-        document.querySelectorAll('.number-input-btn').forEach(button => {
+        document.querySelectorAll('button[data-target]').forEach(button => {
             button.addEventListener('click', (e) => {
                 const targetId = button.dataset.target;
                 const input = document.getElementById(targetId);
-                const isIncrement = button.classList.contains('increment');
-                const isDecrement = button.classList.contains('decrement');
                 
                 if (!input) return;
                 
@@ -245,6 +239,11 @@ class ColorBandEditor {
                 const min = parseFloat(input.min) || 0;
                 const max = parseFloat(input.max) || 100;
                 const step = parseFloat(input.step) || 1;
+                
+                // Determine if this is increment or decrement based on the SVG content
+                const svg = button.querySelector('svg path');
+                const isIncrement = svg && svg.getAttribute('d').includes('V5H13V11H19V13Z'); // Plus icon
+                const isDecrement = !isIncrement; // Minus icon
                 
                 let newValue = currentValue;
                 
@@ -267,7 +266,7 @@ class ColorBandEditor {
         });
         
         // Setup input validation and button state updates
-        document.querySelectorAll('.number-input').forEach(input => {
+        document.querySelectorAll('.input--number').forEach(input => {
             input.addEventListener('input', () => {
                 this.updateNumberInputButtonStates(input);
             });
@@ -281,20 +280,23 @@ class ColorBandEditor {
         const wrapper = input.closest('.number-input-wrapper');
         if (!wrapper) return;
         
-        const decrementBtn = wrapper.querySelector('.decrement');
-        const incrementBtn = wrapper.querySelector('.increment');
+        const buttons = wrapper.querySelectorAll('button[data-target]');
+        if (buttons.length !== 2) return;
         
         const currentValue = parseFloat(input.value) || 0;
         const min = parseFloat(input.min) || 0;
         const max = parseFloat(input.max) || 100;
         
-        if (decrementBtn) {
-            decrementBtn.disabled = currentValue <= min;
-        }
-        
-        if (incrementBtn) {
-            incrementBtn.disabled = currentValue >= max;
-        }
+        buttons.forEach(button => {
+            const svg = button.querySelector('svg path');
+            const isIncrement = svg && svg.getAttribute('d').includes('V5H13V11H19V13Z'); // Plus icon
+            
+            if (isIncrement) {
+                button.disabled = currentValue >= max;
+            } else {
+                button.disabled = currentValue <= min;
+            }
+        });
     }
     
     adjustBandCount() {
@@ -577,6 +579,10 @@ class ColorBandEditor {
     }
     
     createContrastIndicator(backgroundColor) {
+        // Only create indicator if contrast ratio audit is enabled
+        const contrastToggle = document.getElementById('contrastRatio');
+        if (!contrastToggle || !contrastToggle.checked) return null;
+        
         const blackContrast = this.getContrastRatio(backgroundColor, '#000000');
         const whiteContrast = this.getContrastRatio(backgroundColor, '#ffffff');
         
@@ -613,12 +619,10 @@ class ColorBandEditor {
             swatch.style.backgroundColor = color;
             swatch.title = `${index}: ${color}${this.lockedColors.has(index) ? ' (locked)' : ''}`;
             
-            // Add contrast accessibility indicators (only in expanded view)
-            if (!document.body.classList.contains('compact-view')) {
-                const contrastIndicator = this.createContrastIndicator(color);
-                if (contrastIndicator) {
-                    swatch.appendChild(contrastIndicator);
-                }
+            // Add contrast accessibility indicators (controlled by audit toggle)
+            const contrastIndicator = this.createContrastIndicator(color);
+            if (contrastIndicator) {
+                swatch.appendChild(contrastIndicator);
             }
             
             // Add lock overlay if locked
@@ -631,6 +635,15 @@ class ColorBandEditor {
             
             previewContainer.appendChild(swatch);
         });
+        
+        // Update audit features when preview updates
+        // Only auto-select Tailwind color if user hasn't manually selected one
+        if (!this.tailwindColorManuallySelected) {
+            this.autoSelectTailwindColor();
+        }
+        if (document.getElementById('tailwindComparison').checked) {
+            this.updateTailwindComparison();
+        }
     }
     
     applySmoothing() {
@@ -2169,6 +2182,125 @@ class ColorBandEditor {
             this.updateHistoryUI();
             this.saveHistoryToStorage();
         }
+    }
+    
+    // Audit functionality
+    setupAuditToggles() {
+        const contrastToggle = document.getElementById('contrastRatio');
+        const tailwindToggle = document.getElementById('tailwindComparison');
+        const tailwindControl = document.getElementById('tailwindControl');
+        const tailwindSelect = document.getElementById('tailwindColorSelect');
+        const tailwindContainer = document.getElementById('tailwindComparisonContainer');
+        
+        // Contrast ratio toggle
+        contrastToggle.addEventListener('change', (e) => {
+            // Update preview to show/hide contrast ratio indicators
+            this.updatePreview();
+        });
+        
+        // Tailwind toggle
+        tailwindToggle.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            tailwindControl.style.display = isChecked ? 'flex' : 'none';
+            tailwindContainer.style.display = isChecked ? 'block' : 'none';
+            
+            if (isChecked) {
+                this.updateTailwindComparison();
+            }
+        });
+        
+        // Tailwind color selection
+        tailwindSelect.addEventListener('change', () => {
+            this.tailwindColorManuallySelected = true;
+            if (tailwindToggle.checked) {
+                this.updateTailwindComparison();
+            }
+        });
+        
+        // Auto-select Tailwind color based on hue
+        this.autoSelectTailwindColor();
+    }
+    
+    autoSelectTailwindColor() {
+        if (this.colors.length === 0) return;
+        
+        // Get the dominant hue from the middle colors
+        const middleIndex = Math.floor(this.colors.length / 2);
+        const color = this.colors[middleIndex];
+        const hsl = ColorUtils.hexToHsl(color);
+        
+        if (!hsl) return; // Exit if color conversion fails
+        
+        const hue = hsl.h * 360;
+        
+        // Map hue ranges to Tailwind colors (more accurate mapping)
+        const hueMapping = [
+            { range: [0, 12], color: 'red' },      // Pure red
+            { range: [12, 25], color: 'orange' },   // Red-orange 
+            { range: [25, 45], color: 'amber' },    // Orange-yellow
+            { range: [45, 65], color: 'yellow' },   // Pure yellow
+            { range: [65, 85], color: 'lime' },     // Yellow-green
+            { range: [85, 140], color: 'green' },   // Green range (wider)
+            { range: [140, 170], color: 'emerald' }, // Blue-green
+            { range: [170, 185], color: 'teal' },   // Teal range
+            { range: [185, 200], color: 'cyan' },   // Cyan range  
+            { range: [200, 220], color: 'sky' },    // Light blue
+            { range: [220, 245], color: 'blue' },   // Pure blue
+            { range: [245, 265], color: 'indigo' }, // Blue-violet
+            { range: [265, 290], color: 'violet' }, // Purple-violet
+            { range: [290, 320], color: 'purple' }, // Purple range
+            { range: [320, 340], color: 'fuchsia' }, // Magenta-purple
+            { range: [340, 355], color: 'pink' },   // Pink-red
+            { range: [355, 360], color: 'red' }     // Back to red
+        ];
+        
+        const selectedColor = hueMapping.find(mapping => 
+            hue >= mapping.range[0] && hue < mapping.range[1]
+        )?.color || 'blue';
+        
+        document.getElementById('tailwindColorSelect').value = selectedColor;
+    }
+    
+    updateTailwindComparison() {
+        const selectedColor = document.getElementById('tailwindColorSelect').value;
+        
+        // Tailwind CSS color palette
+        const tailwindColors = {
+            red: ['#fef2f2', '#fee2e2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d'],
+            orange: ['#fff7ed', '#ffedd5', '#fed7aa', '#fdba74', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#9a3412', '#7c2d12'],
+            amber: ['#fffbeb', '#fef3c7', '#fde68a', '#fcd34d', '#fbbf24', '#f59e0b', '#d97706', '#b45309', '#92400e', '#78350f'],
+            yellow: ['#fefce8', '#fef9c3', '#fef08a', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207', '#854d0e', '#713f12'],
+            lime: ['#f7fee7', '#ecfccb', '#d9f99d', '#bef264', '#a3e635', '#84cc16', '#65a30d', '#4d7c0f', '#365314', '#1a2e05'],
+            green: ['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#166534', '#14532d'],
+            emerald: ['#ecfdf5', '#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669', '#047857', '#065f46', '#064e3b'],
+            teal: ['#f0fdfa', '#ccfbf1', '#99f6e4', '#5eead4', '#2dd4bf', '#14b8a6', '#0d9488', '#0f766e', '#115e59', '#134e4a'],
+            cyan: ['#ecfeff', '#cffafe', '#a5f3fc', '#67e8f9', '#22d3ee', '#06b6d4', '#0891b2', '#0e7490', '#155e75', '#164e63'],
+            sky: ['#f0f9ff', '#e0f2fe', '#bae6fd', '#7dd3fc', '#38bdf8', '#0ea5e9', '#0284c7', '#0369a1', '#075985', '#0c4a6e'],
+            blue: ['#eff6ff', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a'],
+            indigo: ['#eef2ff', '#e0e7ff', '#c7d2fe', '#a5b4fc', '#818cf8', '#6366f1', '#4f46e5', '#4338ca', '#3730a3', '#312e81'],
+            violet: ['#f5f3ff', '#ede9fe', '#ddd6fe', '#c4b5fd', '#a78bfa', '#8b5cf6', '#7c3aed', '#6d28d9', '#5b21b6', '#4c1d95'],
+            purple: ['#faf5ff', '#f3e8ff', '#e9d5ff', '#d8b4fe', '#c084fc', '#a855f7', '#9333ea', '#7e22ce', '#6b21a8', '#581c87'],
+            fuchsia: ['#fdf4ff', '#fae8ff', '#f5d0fe', '#f0abfc', '#e879f9', '#d946ef', '#c026d3', '#a21caf', '#86198f', '#701a75'],
+            pink: ['#fdf2f8', '#fce7f3', '#fbcfe8', '#f9a8d4', '#f472b6', '#ec4899', '#db2777', '#be185d', '#9d174d', '#831843'],
+            rose: ['#fff1f2', '#ffe4e6', '#fecdd3', '#fda4af', '#fb7185', '#f43f5e', '#e11d48', '#be123c', '#9f1239', '#881337'],
+            slate: ['#f8fafc', '#f1f5f9', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#475569', '#334155', '#1e293b', '#0f172a'],
+            gray: ['#f9fafb', '#f3f4f6', '#e5e7eb', '#d1d5db', '#9ca3af', '#6b7280', '#4b5563', '#374151', '#1f2937', '#111827'],
+            zinc: ['#fafafa', '#f4f4f5', '#e4e4e7', '#d4d4d8', '#a1a1aa', '#71717a', '#52525b', '#3f3f46', '#27272a', '#18181b'],
+            neutral: ['#fafafa', '#f5f5f5', '#e5e5e5', '#d4d4d4', '#a3a3a3', '#737373', '#525252', '#404040', '#262626', '#171717'],
+            stone: ['#fafaf9', '#f5f5f4', '#e7e5e4', '#d6d3d1', '#a8a29e', '#78716c', '#57534e', '#44403c', '#292524', '#1c1917']
+        };
+        
+        const colors = tailwindColors[selectedColor] || tailwindColors.blue;
+        const preview = document.getElementById('tailwindBandPreview');
+        
+        preview.innerHTML = '';
+        colors.forEach((color, index) => {
+            const swatch = document.createElement('div');
+            swatch.className = 'color-preview-swatch';
+            swatch.style.backgroundColor = color;
+            swatch.title = `${selectedColor}-${(index + 1) * 100}`;
+            preview.appendChild(swatch);
+        });
     }
 }
 
