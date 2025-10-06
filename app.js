@@ -603,6 +603,28 @@ class ColorBandEditor {
         
         return (brightest + 0.05) / (darkest + 0.05);
     }
+
+    // Helper function to determine the best text color for accessibility
+    getBestTextColor(backgroundColor) {
+        const blackContrast = this.getContrastRatio(backgroundColor, '#000000');
+        const whiteContrast = this.getContrastRatio(backgroundColor, '#ffffff');
+        
+        const blackAA = blackContrast >= 4.5;
+        const whiteAA = whiteContrast >= 4.5;
+        
+        // Use the color that passes AA contrast, or the better contrast if both pass
+        if (blackAA && whiteAA) {
+            // Both pass AA - use the one with better contrast
+            return blackContrast > whiteContrast ? '#000000' : '#ffffff';
+        } else if (blackAA) {
+            return '#000000';
+        } else if (whiteAA) {
+            return '#ffffff';
+        } else {
+            // Neither passes AA - use the better contrast
+            return blackContrast > whiteContrast ? '#000000' : '#ffffff';
+        }
+    }
     
     createContrastIndicator(backgroundColor) {
         // Only create indicator if contrast ratio audit is enabled
@@ -624,12 +646,10 @@ class ColorBandEditor {
         if (blackAA && whiteAA) {
             // Both pass - show both
             indicator.innerHTML = '<span style="color: #000">Aa</span> <span style="color: #fff">Aa</span>';
-        } else if (blackAA) {
-            // Only black passes
-            indicator.innerHTML = '<span style="color: #000">Aa</span>';
         } else {
-            // Only white passes
-            indicator.innerHTML = '<span style="color: #fff">Aa</span>';
+            // Only one passes - use the helper function to get the best color
+            const bestColor = this.getBestTextColor(backgroundColor);
+            indicator.innerHTML = `<span style="color: ${bestColor}">Aa</span>`;
         }
         
         return indicator;
@@ -669,6 +689,9 @@ class ColorBandEditor {
         }
         if (document.getElementById('tailwindComparison').checked) {
             this.updateTailwindComparison();
+        }
+        if (document.getElementById('deltaEComparison').checked) {
+            this.updateDeltaEAnalysis();
         }
     }
     
@@ -2533,6 +2556,7 @@ class ColorBandEditor {
     setupAuditToggles() {
         const contrastToggle = document.getElementById('contrastRatio');
         const tailwindToggle = document.getElementById('tailwindComparison');
+        const deltaEToggle = document.getElementById('deltaEComparison');
         const tailwindControl = document.getElementById('tailwindControl');
         const tailwindSelect = document.getElementById('tailwindColorSelect');
         const tailwindContainer = document.getElementById('tailwindComparisonContainer');
@@ -2551,6 +2575,20 @@ class ColorBandEditor {
             
             if (isChecked) {
                 this.updateTailwindComparison();
+            }
+        });
+        
+        // Delta E toggle
+        deltaEToggle.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            const deltaELegend = document.getElementById('deltaELegend');
+            deltaELegend.style.display = isChecked ? 'block' : 'none';
+            
+            if (isChecked) {
+                this.updateDeltaEAnalysis();
+            } else {
+                // Remove all delta E indicators
+                document.querySelectorAll('.delta-e-indicator').forEach(indicator => indicator.remove());
             }
         });
         
@@ -2646,6 +2684,49 @@ class ColorBandEditor {
             swatch.title = `${selectedColor}-${(index + 1) * 100}`;
             preview.appendChild(swatch);
         });
+    }
+
+    updateDeltaEAnalysis() {
+        // Remove any existing delta E indicators
+        document.querySelectorAll('.delta-e-indicator').forEach(indicator => indicator.remove());
+        
+        if (this.colors.length < 2) return;
+
+        // Get the color preview swatches
+        const swatches = document.querySelectorAll('#colorBandPreview .color-preview-swatch');
+        
+        // Calculate Delta E for each adjacent pair and add indicators
+        for (let i = 0; i < this.colors.length - 1; i++) {
+            const color1 = this.colors[i];
+            const color2 = this.colors[i + 1];
+            
+            // Debug: Check if ColorUtils methods exist
+            if (typeof ColorUtils.calculateDeltaE !== 'function') {
+                console.error('ColorUtils.calculateDeltaE is not available');
+                return;
+            }
+            
+            const deltaE = ColorUtils.calculateDeltaE(color1, color2);
+            const interpretation = ColorUtils.interpretDeltaE(deltaE);
+            
+            // Add indicator to the first swatch (showing transition to next)
+            const targetSwatch = swatches[i];
+            if (targetSwatch) {
+                const indicator = document.createElement('div');
+                indicator.className = `delta-e-indicator ${interpretation.toLowerCase().replace(' ', '-')}`;
+                
+                // Get the best text color for accessibility
+                const textColor = this.getBestTextColor(color1);
+                
+                indicator.style.color = textColor;
+                indicator.textContent = `${deltaE.toFixed(1)}→`;
+                indicator.title = `Delta E: ${deltaE.toFixed(2)} (${interpretation}) to next color`;
+                
+                // Position it relatively to the swatch
+                targetSwatch.style.position = 'relative';
+                targetSwatch.appendChild(indicator);
+            }
+        }
     }
 }
 

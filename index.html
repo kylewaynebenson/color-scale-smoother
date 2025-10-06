@@ -138,6 +138,13 @@
                         </label>
                     </div>
                     
+                    <div class="audit-toggle">
+                        <input type="checkbox" id="deltaEComparison" class="checkbox">
+                        <label class="h4" for="deltaEComparison" class="label" title="Show Delta E differences between adjacent colors">
+                            <span class="label__text">Perceptual Difference</span>
+                        </label>
+                    </div>
+                    
                     <div class="control-row tailwind-control" id="tailwindControl" style="display: none;">
                         <label class="h4" for="tailwindColorSelect">Color:</label>
                         <select id="tailwindColorSelect" class="input input--select">
@@ -164,6 +171,44 @@
                             <option value="neutral">Neutral</option>
                             <option value="stone">Stone</option>
                         </select>
+                    </div>
+                    
+                    <div class="delta-e-legend" id="deltaELegend" style="display: none;">
+                        <div class="delta-e-legend-title">Delta E Interpretation</div>
+                        <table class="delta-e-legend-table">
+                            <thead>
+                                <tr>
+                                    <th>Range</th>
+                                    <th>Perception</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr title="Perfect for subtle gradients">
+                                    <td class="legend-imperceptible">&lt; 1.0</td>
+                                    <td>Imperceptible</td>
+                                </tr>
+                                <tr title="Good for smooth transitions">
+                                    <td class="legend-very-slight">1.0 - 2.0</td>
+                                    <td>Very slight</td>
+                                </tr>
+                                <tr title="Acceptable for most uses">
+                                    <td class="legend-slight">2.0 - 4.0</td>
+                                    <td>Slight</td>
+                                </tr>
+                                <tr title="May need smoothing">
+                                    <td class="legend-noticeable">4.0 - 5.0</td>
+                                    <td>Noticeable</td>
+                                </tr>
+                                <tr title="Consider more bands">
+                                    <td class="legend-significant">5.0 - 10.0</td>
+                                    <td>Significant</td>
+                                </tr>
+                                <tr title="Increase band count">
+                                    <td class="legend-very-significant">&gt; 10.0</td>
+                                    <td>Very significant</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -219,7 +264,7 @@
                 <div id="colorBandPreview" class="color-band-preview"></div>
                 <div class="tailwind-comparison-container color-band-preview" id="tailwindComparisonContainer" style="display: none;">
                     <div id="tailwindBandPreview" class="tailwind-band-preview"></div>
-                </div>    
+                </div>
             </div>
             <div class="graphs-container">
                 <div class="color-graph-container">
