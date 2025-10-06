@@ -1000,16 +1000,9 @@ h6, .h6 {
   flex-wrap: wrap;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1000px) {
   .graphs-container {
     flex-direction: column;
-  }
-}
-
-@media (min-width: 1201px) {
-  .color-graph-container {
-    flex: 1;
-    min-width: 300px;
   }
 }
 
@@ -1018,17 +1011,16 @@ h6, .h6 {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
-  padding: var(--space-3);
   transition: var(--transition-colors);
   flex: 1;
-  min-width: 0;
+  min-width: 300px;
 }
 
 .graph-header {
   display: flex;
+  padding: var(--space-2-5) var(--space-3);
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-2);
 }
 
 .graph-copy-btn {
@@ -1043,7 +1035,6 @@ h6, .h6 {
 .color-space-graph {
   position: relative;
   width: 100%;
-  max-width: 31.25rem;
   margin: 0 auto;
 }
 
@@ -1089,8 +1080,6 @@ h6, .h6 {
 }
 
 .graph-content {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--color-background-secondary);
   transition: var(--transition-colors);
@@ -1203,6 +1192,82 @@ h6, .h6 {
 .saturation-graph-points circle.locked {
   fill: var(--color-graph);
   stroke: var(--color-graph-hover);
+}
+
+/* RGB Channel Graph Specific Styles */
+.red-graph-line path {
+  fill: none;
+  stroke: #ef4444;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: var(--transition-colors);
+}
+
+.red-graph-points circle {
+  stroke-width: 2;
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.red-graph-points circle.unlocked {
+  fill: var(--color-surface);
+  stroke: #ef4444;
+}
+
+.red-graph-points circle.locked {
+  fill: #ef4444;
+  stroke: #dc2626;
+}
+
+.green-graph-line path {
+  fill: none;
+  stroke: #22c55e;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: var(--transition-colors);
+}
+
+.green-graph-points circle {
+  stroke-width: 2;
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.green-graph-points circle.unlocked {
+  fill: var(--color-surface);
+  stroke: #22c55e;
+}
+
+.green-graph-points circle.locked {
+  fill: #22c55e;
+  stroke: #16a34a;
+}
+
+.blue-graph-line path {
+  fill: none;
+  stroke: #3b82f6;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: var(--transition-colors);
+}
+
+.blue-graph-points circle {
+  stroke-width: 2;
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.blue-graph-points circle.unlocked {
+  fill: var(--color-surface);
+  stroke: #3b82f6;
+}
+
+.blue-graph-points circle.locked {
+  fill: #3b82f6;
+  stroke: #2563eb;
 }
 
 /* Color Input Components */

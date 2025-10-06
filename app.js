@@ -32,6 +32,9 @@ class ColorBandEditor {
         this.drawColorSpaceGraph();
         this.drawHueSpaceGraph();
         this.drawSaturationSpaceGraph();
+        this.drawRedChannelGraph();
+        this.drawGreenChannelGraph();
+        this.drawBlueChannelGraph();
         
         // Only save initial state if history is empty (fresh start)
         if (this.history.length === 0) {
@@ -133,6 +136,18 @@ class ColorBandEditor {
         
         document.getElementById('copySaturationGraphFigma').addEventListener('click', () => {
             this.copySaturationGraphForFigma();
+        });
+        
+        document.getElementById('copyRedGraphFigma').addEventListener('click', () => {
+            this.copyRedGraphForFigma();
+        });
+        
+        document.getElementById('copyGreenGraphFigma').addEventListener('click', () => {
+            this.copyGreenGraphForFigma();
+        });
+        
+        document.getElementById('copyBlueGraphFigma').addEventListener('click', () => {
+            this.copyBlueGraphForFigma();
         });
         
         document.getElementById('copyAllForFigma').addEventListener('click', () => {
@@ -363,6 +378,9 @@ class ColorBandEditor {
         this.drawColorSpaceGraph();
         this.drawHueSpaceGraph();
         this.drawSaturationSpaceGraph();
+        this.drawRedChannelGraph();
+        this.drawGreenChannelGraph();
+        this.drawBlueChannelGraph();
         this.updateURL();
         this.saveToHistory(`Changed to ${this.bandCount} colors`);
     }
@@ -524,6 +542,11 @@ class ColorBandEditor {
         }
         this.renderEditor();
         this.drawColorSpaceGraph();
+        this.drawHueSpaceGraph();
+        this.drawSaturationSpaceGraph();
+        this.drawRedChannelGraph();
+        this.drawGreenChannelGraph();
+        this.drawBlueChannelGraph();
         this.updateURL(); // Update URL when lock state changes
         
         const action = wasLocked ? 'Unlocked' : 'Locked';
@@ -536,6 +559,9 @@ class ColorBandEditor {
         this.drawColorSpaceGraph();
         this.drawHueSpaceGraph();
         this.drawSaturationSpaceGraph();
+        this.drawRedChannelGraph();
+        this.drawGreenChannelGraph();
+        this.drawBlueChannelGraph();
         this.updateURL(); // Update URL when color changes
         this.saveToHistory(`Updated color ${index + 1}`);
     }
@@ -678,6 +704,9 @@ class ColorBandEditor {
         this.drawColorSpaceGraph();
         this.drawHueSpaceGraph();
         this.drawSaturationSpaceGraph();
+        this.drawRedChannelGraph();
+        this.drawGreenChannelGraph();
+        this.drawBlueChannelGraph();
         this.updateURL(); // Update URL when smoothing is applied
         
         const algorithmName = document.getElementById('smoothingAlgorithm').value;
@@ -1005,6 +1034,166 @@ class ColorBandEditor {
         });
     }
     
+    drawRedChannelGraph() {
+        if (this.colors.length < 2) return;
+        
+        const svg = document.querySelector('#redChannelGraph svg');
+        const gridGroup = svg.querySelector('.graph-grid');
+        const lineGroup = svg.querySelector('.graph-line');
+        const pointsGroup = svg.querySelector('.graph-points');
+        
+        // Clear existing content
+        gridGroup.innerHTML = '';
+        lineGroup.innerHTML = '';
+        pointsGroup.innerHTML = '';
+        
+        // Convert colors to red values
+        const redValues = this.colors.map(color => {
+            const rgb = ColorUtils.hexToRgb(color);
+            return rgb ? rgb.r : 0;
+        });
+        
+        this.drawRGBChannelGraph(svg, redValues, 'red', 'R');
+    }
+    
+    drawGreenChannelGraph() {
+        if (this.colors.length < 2) return;
+        
+        const svg = document.querySelector('#greenChannelGraph svg');
+        const gridGroup = svg.querySelector('.graph-grid');
+        const lineGroup = svg.querySelector('.graph-line');
+        const pointsGroup = svg.querySelector('.graph-points');
+        
+        // Clear existing content
+        gridGroup.innerHTML = '';
+        lineGroup.innerHTML = '';
+        pointsGroup.innerHTML = '';
+        
+        // Convert colors to green values
+        const greenValues = this.colors.map(color => {
+            const rgb = ColorUtils.hexToRgb(color);
+            return rgb ? rgb.g : 0;
+        });
+        
+        this.drawRGBChannelGraph(svg, greenValues, 'green', 'G');
+    }
+    
+    drawBlueChannelGraph() {
+        if (this.colors.length < 2) return;
+        
+        const svg = document.querySelector('#blueChannelGraph svg');
+        const gridGroup = svg.querySelector('.graph-grid');
+        const lineGroup = svg.querySelector('.graph-line');
+        const pointsGroup = svg.querySelector('.graph-points');
+        
+        // Clear existing content
+        gridGroup.innerHTML = '';
+        lineGroup.innerHTML = '';
+        pointsGroup.innerHTML = '';
+        
+        // Convert colors to blue values
+        const blueValues = this.colors.map(color => {
+            const rgb = ColorUtils.hexToRgb(color);
+            return rgb ? rgb.b : 0;
+        });
+        
+        this.drawRGBChannelGraph(svg, blueValues, 'blue', 'B');
+    }
+    
+    drawRGBChannelGraph(svg, channelValues, channelName, channelLabel) {
+        const gridGroup = svg.querySelector('.graph-grid');
+        const lineGroup = svg.querySelector('.graph-line');
+        const pointsGroup = svg.querySelector('.graph-points');
+        
+        // Find min/max for scaling
+        let minValue = Math.min(...channelValues);
+        let maxValue = Math.max(...channelValues);
+        
+        // Handle edge case where all values are the same
+        if (minValue === maxValue) {
+            minValue = Math.max(0, maxValue - 10);
+            maxValue = Math.min(255, maxValue + 10);
+        }
+        
+        // Ensure we have some range to display
+        const range = maxValue - minValue;
+        if (range < 20) {
+            const center = (minValue + maxValue) / 2;
+            minValue = Math.max(0, center - 10);
+            maxValue = Math.min(255, center + 10);
+        }
+        
+        // Update axis labels with actual range
+        const maxLabel = svg.querySelector(`.${channelName}-max`);
+        const midLabel = svg.querySelector(`.${channelName}-mid`);
+        const minLabel = svg.querySelector(`.${channelName}-min`);
+        
+        if (maxLabel && midLabel && minLabel) {
+            const midValue = (minValue + maxValue) / 2;
+            maxLabel.textContent = Math.round(maxValue);
+            midLabel.textContent = Math.round(midValue);
+            minLabel.textContent = Math.round(minValue);
+        }
+        
+        // Graph dimensions
+        const width = 440;
+        const height = 160;
+        const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+        const graphWidth = width - margin.left - margin.right;
+        const graphHeight = height - margin.top - margin.bottom;
+        
+        // Create grid lines
+        const gridLines = 5;
+        for (let i = 0; i <= gridLines; i++) {
+            const y = margin.top + (i / gridLines) * graphHeight;
+            const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            gridLine.setAttribute('x1', margin.left);
+            gridLine.setAttribute('y1', y);
+            gridLine.setAttribute('x2', width - margin.right);
+            gridLine.setAttribute('y2', y);
+            gridGroup.appendChild(gridLine);
+        }
+        
+        // Create points
+        const points = channelValues.map((value, index) => {
+            const x = margin.left + (index / (this.colors.length - 1)) * graphWidth;
+            const y = margin.top + graphHeight - ((value - minValue) / (maxValue - minValue)) * graphHeight;
+            return { x, y, value, index };
+        });
+        
+        // Create line path
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        let pathData = `M ${points[0].x} ${points[0].y}`;
+        
+        for (let i = 1; i < points.length; i++) {
+            pathData += ` L ${points[i].x} ${points[i].y}`;
+        }
+        
+        path.setAttribute('d', pathData);
+        lineGroup.appendChild(path);
+        
+        // Create points
+        points.forEach(point => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', point.x);
+            circle.setAttribute('cy', point.y);
+            circle.setAttribute('r', 4);
+            circle.setAttribute('class', this.lockedColors.has(point.index) ? 'locked' : 'unlocked');
+            
+            // Add tooltip
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            title.textContent = `Color ${point.index}: ${Math.round(point.value)}`;
+            circle.appendChild(title);
+            
+            circle.style.cursor = 'pointer';
+            circle.addEventListener('click', () => {
+                this.toggleLock(point.index);
+            });
+            
+            pointsGroup.appendChild(circle);
+        });
+    }
+    
     resetColors() {
         this.colors = [...this.originalColors];
         this.lockedColors.clear();
@@ -1013,6 +1202,9 @@ class ColorBandEditor {
         this.drawColorSpaceGraph();
         this.drawHueSpaceGraph();
         this.drawSaturationSpaceGraph();
+        this.drawRedChannelGraph();
+        this.drawGreenChannelGraph();
+        this.drawBlueChannelGraph();
         this.updateURL(); // Update URL when resetting
         this.saveToHistory('Reset to original colors');
     }
@@ -1511,6 +1703,150 @@ class ColorBandEditor {
         }
     }
     
+    async copyRedGraphForFigma() {
+        if (this.colors.length < 2) {
+            this.showCopyFeedback('copyRedGraphFigma', 'Need colors first');
+            return;
+        }
+        
+        const redValues = this.colors.map(color => {
+            const rgb = ColorUtils.hexToRgb(color);
+            return rgb ? rgb.r : 0;
+        });
+        
+        const svgContent = this.generateRGBGraphSVG(redValues, 'red', '#dc2626', '#b91c1c', 'Red Channel');
+        
+        try {
+            await navigator.clipboard.writeText(svgContent);
+            this.showCopyFeedback('copyRedGraphFigma', 'Red graph copied!');
+        } catch (err) {
+            console.error('Failed to copy red graph: ', err);
+            this.showCopyFeedback('copyRedGraphFigma', 'Copy failed');
+        }
+    }
+    
+    async copyGreenGraphForFigma() {
+        if (this.colors.length < 2) {
+            this.showCopyFeedback('copyGreenGraphFigma', 'Need colors first');
+            return;
+        }
+        
+        const greenValues = this.colors.map(color => {
+            const rgb = ColorUtils.hexToRgb(color);
+            return rgb ? rgb.g : 0;
+        });
+        
+        const svgContent = this.generateRGBGraphSVG(greenValues, 'green', '#16a34a', '#15803d', 'Green Channel');
+        
+        try {
+            await navigator.clipboard.writeText(svgContent);
+            this.showCopyFeedback('copyGreenGraphFigma', 'Green graph copied!');
+        } catch (err) {
+            console.error('Failed to copy green graph: ', err);
+            this.showCopyFeedback('copyGreenGraphFigma', 'Copy failed');
+        }
+    }
+    
+    async copyBlueGraphForFigma() {
+        if (this.colors.length < 2) {
+            this.showCopyFeedback('copyBlueGraphFigma', 'Need colors first');
+            return;
+        }
+        
+        const blueValues = this.colors.map(color => {
+            const rgb = ColorUtils.hexToRgb(color);
+            return rgb ? rgb.b : 0;
+        });
+        
+        const svgContent = this.generateRGBGraphSVG(blueValues, 'blue', '#2563eb', '#1d4ed8', 'Blue Channel');
+        
+        try {
+            await navigator.clipboard.writeText(svgContent);
+            this.showCopyFeedback('copyBlueGraphFigma', 'Blue graph copied!');
+        } catch (err) {
+            console.error('Failed to copy blue graph: ', err);
+            this.showCopyFeedback('copyBlueGraphFigma', 'Copy failed');
+        }
+    }
+    
+    generateRGBGraphSVG(channelValues, channelName, strokeColor, strokeColorDark, title) {
+        const width = 440;
+        const height = 160;
+        const margin = { top: 30, right: 30, bottom: 30, left: 40 };
+        const graphWidth = width - margin.left - margin.right;
+        const graphHeight = height - margin.top - margin.bottom;
+        
+        // Find min/max for scaling
+        let minValue = Math.min(...channelValues);
+        let maxValue = Math.max(...channelValues);
+        
+        // Handle edge case where all values are the same
+        if (minValue === maxValue) {
+            minValue = Math.max(0, maxValue - 10);
+            maxValue = Math.min(255, maxValue + 10);
+        }
+        
+        // Ensure we have some range to display
+        const range = maxValue - minValue;
+        if (range < 20) {
+            const center = (minValue + maxValue) / 2;
+            minValue = Math.max(0, center - 10);
+            maxValue = Math.min(255, center + 10);
+        }
+        
+        // Start SVG
+        let svgContent = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
+        svgContent += `<rect width="100%" height="100%" fill="#f8fafc"/>`;
+        
+        // Add title
+        svgContent += `<text x="${width/2}" y="20" font-family="system-ui" font-size="14" fill="#1e293b" text-anchor="middle" font-weight="600">${title}</text>`;
+        
+        // Y-axis labels
+        const midValue = (minValue + maxValue) / 2;
+        svgContent += `<text x="25" y="40" font-family="system-ui" font-size="11" fill="#64748b" text-anchor="end">${Math.round(maxValue)}</text>`;
+        svgContent += `<text x="25" y="${margin.top + graphHeight/2 + 4}" font-family="system-ui" font-size="11" fill="#64748b" text-anchor="end">${Math.round(midValue)}</text>`;
+        svgContent += `<text x="25" y="${height - margin.bottom + 4}" font-family="system-ui" font-size="11" fill="#64748b" text-anchor="end">${Math.round(minValue)}</text>`;
+        
+        // Y-axis title
+        svgContent += `<text x="12" y="${margin.top + graphHeight/2 + 4}" font-family="system-ui" font-size="12" fill="#475569" text-anchor="middle" font-weight="500">${channelName.charAt(0).toUpperCase()}</text>`;
+        
+        // X-axis label
+        svgContent += `<text x="${width/2}" y="${height - 5}" font-family="system-ui" font-size="12" fill="#475569" text-anchor="middle" font-weight="500">Color Index</text>`;
+        
+        // Create path data
+        let pathData = '';
+        const points = [];
+        
+        for (let i = 0; i < this.colors.length; i++) {
+            const x = margin.left + (i / (this.colors.length - 1)) * graphWidth;
+            const normalizedValue = (channelValues[i] - minValue) / (maxValue - minValue);
+            const y = height - margin.bottom - normalizedValue * graphHeight;
+            
+            points.push({ x, y, index: i });
+            
+            if (i === 0) {
+                pathData += `M ${x} ${y}`;
+            } else {
+                pathData += ` L ${x} ${y}`;
+            }
+        }
+        
+        // Add line
+        svgContent += `<path d="${pathData}" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+        
+        // Add points
+        points.forEach(point => {
+            const isLocked = this.lockedColors.has(point.index);
+            const fillColor = isLocked ? strokeColor : '#ffffff';
+            const strokeColorFinal = isLocked ? strokeColorDark : strokeColor;
+            
+            svgContent += `<circle cx="${point.x}" cy="${point.y}" r="4" fill="${fillColor}" stroke="${strokeColorFinal}" stroke-width="2"/>`;
+        });
+        
+        svgContent += '</svg>';
+        return svgContent;
+    }
+    
     async copyAllForFigma() {
         if (this.colors.length < 2) {
             this.showCopyFeedback('copyAllForFigma', 'Need colors first');
@@ -1706,6 +2042,9 @@ class ColorBandEditor {
             this.drawColorSpaceGraph();
             this.drawHueSpaceGraph();
             this.drawSaturationSpaceGraph();
+            this.drawRedChannelGraph();
+            this.drawGreenChannelGraph();
+            this.drawBlueChannelGraph();
             this.updateURL();
             this.saveToHistory(`Imported ${colors.length} colors from clipboard`);
             
@@ -1840,6 +2179,9 @@ class ColorBandEditor {
             this.drawColorSpaceGraph();
             this.drawHueSpaceGraph();
             this.drawSaturationSpaceGraph();
+            this.drawRedChannelGraph();
+            this.drawGreenChannelGraph();
+            this.drawBlueChannelGraph();
             this.updateURL();
             this.saveToHistory(`Imported ${colors.length} colors from ${file.name}`);
             
@@ -2045,6 +2387,9 @@ class ColorBandEditor {
         this.drawColorSpaceGraph();
         this.drawHueSpaceGraph();
         this.drawSaturationSpaceGraph();
+        this.drawRedChannelGraph();
+        this.drawGreenChannelGraph();
+        this.drawBlueChannelGraph();
         this.updateURL();
     }
     
