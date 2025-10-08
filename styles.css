@@ -1789,11 +1789,9 @@ body.compact-view .hex-input {
 }
 
 .tailwind-comparison-container {
-  margin-bottom: var(--space-4);
-  border-radius: var(--border-radius-lg);
   overflow: hidden;
+  margin-top: -1px;
   background-color: var(--color-surface-primary);
-  border: 1px solid var(--color-border-subtle);
 }
 
 .tailwind-comparison-header {
@@ -1807,7 +1805,7 @@ body.compact-view .hex-input {
 
 .tailwind-band-preview {
   display: flex;
-  height: 60px;
+  height: 100%;
   width: 100%;
 }
 
