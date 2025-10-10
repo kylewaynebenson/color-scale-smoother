@@ -693,6 +693,9 @@ class ColorBandEditor {
         if (document.getElementById('deltaEComparison').checked) {
             this.updateDeltaEAnalysis();
         }
+        if (document.getElementById('lightnessComparison').checked) {
+            this.updateLightnessAnalysis();
+        }
     }
     
     applySmoothing() {
@@ -1878,7 +1881,7 @@ class ColorBandEditor {
         
         // Create a comprehensive SVG that includes color bands and all three graphs
         const frameWidth = 1200;
-        const frameHeight = 300;
+        const frameHeight = 400; // Increased height to accommodate content
         const margin = 40;
         const spacing = 20;
         
@@ -1892,11 +1895,8 @@ class ColorBandEditor {
         // Background
         svgContent += `<rect width="100%" height="100%" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>`;
         
-        // Title
-        svgContent += `<text x="${frameWidth/2}" y="25" font-family="system-ui" font-size="14" font-weight="600" fill="#1e293b" text-anchor="middle">Color Scale Analysis</text>`;
-        
-        // Color bands section
-        const colorBandY = 50;
+        // Color bands section (start higher up without header)
+        const colorBandY = 30;
         const bandWidth = (frameWidth - margin * 2) / this.colors.length;
         
         this.colors.forEach((color, index) => {
@@ -1905,6 +1905,67 @@ class ColorBandEditor {
             
             // Add color labels
             svgContent += `<text x="${x + bandWidth/2}" y="${colorBandY + colorBandHeight + 15}" font-family="system-ui" font-size="10" fill="#64748b" text-anchor="middle">${color}</text>`;
+            
+            // Add audit overlays if enabled
+            const contrastToggle = document.getElementById('contrastRatio');
+            const deltaEToggle = document.getElementById('deltaEComparison');
+            const lightnessToggle = document.getElementById('lightnessComparison');
+            
+            // AA Contrast Ratio overlay
+            if (contrastToggle && contrastToggle.checked) {
+                const blackContrast = this.getContrastRatio(color, '#000000');
+                const whiteContrast = this.getContrastRatio(color, '#ffffff');
+                const blackAA = blackContrast >= 4.5;
+                const whiteAA = whiteContrast >= 4.5;
+                
+                if (blackAA || whiteAA) {
+                    const textY = colorBandY + colorBandHeight - 10;
+                    
+                    if (blackAA && whiteAA) {
+                        // Both pass - show both
+                        svgContent += `<text x="${x + 8}" y="${textY}" font-family="SF Mono, Monaco, monospace" font-size="12" font-weight="500" fill="#000000">Aa</text>`;
+                        svgContent += `<text x="${x + 25}" y="${textY}" font-family="SF Mono, Monaco, monospace" font-size="12" font-weight="500" fill="#ffffff" stroke="#000000" stroke-width="0.5">Aa</text>`;
+                    } else {
+                        // Only one passes
+                        const bestColor = this.getBestTextColor(color);
+                        const strokeColor = bestColor === '#ffffff' ? '#000000' : 'none';
+                        const strokeWidth = bestColor === '#ffffff' ? '0.5' : '0';
+                        svgContent += `<text x="${x + 8}" y="${textY}" font-family="SF Mono, Monaco, monospace" font-size="12" font-weight="500" fill="${bestColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}">Aa</text>`;
+                    }
+                }
+            }
+            
+            // Delta E overlay
+            if (deltaEToggle && deltaEToggle.checked && index < this.colors.length - 1) {
+                const color1 = this.colors[index];
+                const color2 = this.colors[index + 1];
+                
+                if (typeof ColorUtils.calculateDeltaE === 'function') {
+                    const deltaE = ColorUtils.calculateDeltaE(color1, color2);
+                    const bestColor = this.getBestTextColor(color1);
+                    const strokeColor = bestColor === '#ffffff' ? '#000000' : 'none';
+                    const strokeWidth = bestColor === '#ffffff' ? '0.5' : '0';
+                    
+                    svgContent += `<text x="${x + 8}" y="${colorBandY + 18}" font-family="SF Mono, Monaco, monospace" font-size="12" font-weight="500" fill="${bestColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}">Δ${deltaE.toFixed(1)}→</text>`;
+                }
+            }
+            
+            // Lightness difference overlay
+            if (lightnessToggle && lightnessToggle.checked && index < this.colors.length - 1) {
+                const color1 = this.colors[index];
+                const color2 = this.colors[index + 1];
+                
+                if (typeof ColorUtils.hexToLab === 'function') {
+                    const lab1 = ColorUtils.hexToLab(color1);
+                    const lab2 = ColorUtils.hexToLab(color2);
+                    const lightnessDiff = Math.abs(lab2.l - lab1.l);
+                    const bestColor = this.getBestTextColor(color1);
+                    const strokeColor = bestColor === '#ffffff' ? '#000000' : 'none';
+                    const strokeWidth = bestColor === '#ffffff' ? '0.5' : '0';
+                    
+                    svgContent += `<text x="${x + 8}" y="${colorBandY + 32}" font-family="SF Mono, Monaco, monospace" font-size="12" font-weight="500" fill="${bestColor}" stroke="${strokeColor}" stroke-width="${strokeWidth}">${lightnessDiff.toFixed(1)}→</text>`;
+                }
+            }
         });
         
         // Graphs section
@@ -2024,42 +2085,86 @@ class ColorBandEditor {
     async importFromClipboard() {
         try {
             // Check if clipboard API is available
-            if (!navigator.clipboard || !navigator.clipboard.readText) {
+            if (!navigator.clipboard) {
                 alert('Clipboard access is not available in your browser. Please use a modern browser and ensure the page is served over HTTPS.');
                 return;
             }
-            
-            // Read clipboard content
-            const clipboardText = await navigator.clipboard.readText();
-            
-            if (!clipboardText || clipboardText.trim() === '') {
-                alert('Clipboard is empty. Please copy some Figma elements first.');
+
+            // Try to read both text and clipboard items for better compatibility
+            let clipboardText = '';
+            let foundContent = false;
+
+            // Method 1: Try reading text directly
+            if (navigator.clipboard.readText) {
+                try {
+                    clipboardText = await navigator.clipboard.readText();
+                    if (clipboardText && clipboardText.trim()) {
+                        foundContent = true;
+                    }
+                } catch (err) {
+                    console.warn('Failed to read clipboard text:', err);
+                }
+            }
+
+            // Method 2: Try reading clipboard items (handles more formats)
+            if (!foundContent && navigator.clipboard.read) {
+                try {
+                    const clipboardItems = await navigator.clipboard.read();
+                    for (const item of clipboardItems) {
+                        if (item.types.includes('text/plain')) {
+                            const textBlob = await item.getType('text/plain');
+                            const text = await textBlob.text();
+                            if (text && text.trim()) {
+                                clipboardText = text;
+                                foundContent = true;
+                                break;
+                            }
+                        } else if (item.types.includes('text/html')) {
+                            const htmlBlob = await item.getType('text/html');
+                            const html = await htmlBlob.text();
+                            if (html && html.trim()) {
+                                clipboardText = html;
+                                foundContent = true;
+                                break;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Failed to read clipboard items:', err);
+                }
+            }
+
+            // Check if we found any content
+            if (!foundContent || !clipboardText || clipboardText.trim() === '') {
+                alert('Clipboard appears to be empty or contains unsupported content.\n\nTry:\n• Copy colored shapes/rectangles from Figma\n• Copy as CSS from Figma\n• Copy hex color codes as text\n\nMake sure to grant clipboard permissions when prompted.');
                 return;
             }
-            
+
+            console.log('Clipboard content detected:', clipboardText.substring(0, 200) + '...');
+
             // Parse colors from clipboard data
             const colors = this.parseColorsFromClipboard(clipboardText);
             
             if (colors.length === 0) {
-                alert('No valid colors found in clipboard data. Make sure you copied Figma rectangles or other elements with fill colors.');
+                alert('No valid colors found in clipboard data.\n\nSupported formats:\n• Figma shapes/rectangles with fill colors\n• CSS with hex colors (#RRGGBB)\n• RGB colors (rgb(r,g,b))\n• HSL colors (hsl(h,s%,l%))\n• Plain text with hex codes\n\nMake sure your copied content contains color information.');
                 return;
             }
-            
+
             if (colors.length > 20) {
                 const proceed = confirm(`Found ${colors.length} colors. This will be limited to 20 colors (the maximum). Continue?`);
                 if (!proceed) return;
                 colors.splice(20); // Limit to 20 colors
             }
-            
+
             // Update the application with imported colors
             this.bandCount = colors.length;
             this.colors = [...colors];
             this.originalColors = [...colors];
             this.lockedColors.clear(); // Clear all locks when importing
-            
+
             // Update UI
             document.getElementById('bandCount').value = this.bandCount;
-            
+
             this.renderEditor();
             this.updatePreview();
             this.drawColorSpaceGraph();
@@ -2070,7 +2175,7 @@ class ColorBandEditor {
             this.drawBlueChannelGraph();
             this.updateURL();
             this.saveToHistory(`Imported ${colors.length} colors from clipboard`);
-            
+
             // Show success feedback
             const button = document.getElementById('importClipboardBtn');
             const originalText = button.innerHTML;
@@ -2079,16 +2184,24 @@ class ColorBandEditor {
             </svg>Imported ${colors.length} colors!`;
             button.style.background = 'var(--color-success-600)';
             button.style.color = 'white';
-            
+
             setTimeout(() => {
                 button.innerHTML = originalText;
                 button.style.background = '';
                 button.style.color = '';
             }, 2000);
-            
+
         } catch (error) {
             console.error('Import failed:', error);
-            alert('Failed to import from clipboard. Make sure you have copied valid Figma data and granted clipboard permissions.');
+            
+            // More specific error messages
+            if (error.name === 'NotAllowedError') {
+                alert('Clipboard access was denied. Please allow clipboard permissions for this site and try again.');
+            } else if (error.name === 'NotFoundError') {
+                alert('No clipboard data found. Please copy some content first and try again.');
+            } else {
+                alert('Failed to import from clipboard. Make sure you have:\n• Copied colored shapes or text from Figma\n• Granted clipboard permissions\n• Used a supported browser (Chrome, Firefox, Safari)');
+            }
         }
     }
     
@@ -2096,7 +2209,21 @@ class ColorBandEditor {
         const colors = [];
         const seenColors = new Set(); // Prevent duplicates
         
-        // Common color patterns to match
+        // First, try to parse as Figma SVG data (when copying shapes directly)
+        const svgColors = this.parseColorsFromSVG(clipboardText);
+        svgColors.forEach(color => {
+            if (!seenColors.has(color.toLowerCase())) {
+                colors.push(color.toUpperCase());
+                seenColors.add(color.toLowerCase());
+            }
+        });
+        
+        // If we found colors from SVG, return those
+        if (colors.length > 0) {
+            return colors;
+        }
+        
+        // Otherwise, fall back to text-based parsing (CSS, hex patterns, etc.)
         const patterns = [
             // Hex colors (#RRGGBB or #RGB)
             /#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})\b/g,
@@ -2153,6 +2280,84 @@ class ColorBandEditor {
         });
         
         return colors;
+    }
+    
+    parseColorsFromSVG(clipboardText) {
+        const colors = [];
+        
+        // Check if clipboard contains SVG data (common when copying shapes from Figma)
+        if (!clipboardText.includes('<svg') && !clipboardText.includes('fill=')) {
+            return colors;
+        }
+        
+        try {
+            // Parse SVG and extract fill colors
+            const fillPatterns = [
+                // Standard SVG fill attributes
+                /fill=["']#([0-9A-Fa-f]{6})["']/gi,
+                /fill=["']#([0-9A-Fa-f]{3})["']/gi,
+                // RGB fills in SVG
+                /fill=["']rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)["']/gi,
+                // Style attribute fills
+                /style=["'][^"']*fill:\s*#([0-9A-Fa-f]{6})[^"']*["']/gi,
+                /style=["'][^"']*fill:\s*#([0-9A-Fa-f]{3})[^"']*["']/gi,
+                /style=["'][^"']*fill:\s*rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)[^"']*["']/gi,
+                // Figma-specific patterns (sometimes uses different formats)
+                /"fill":\s*"#([0-9A-Fa-f]{6})"/gi,
+                /"color":\s*"#([0-9A-Fa-f]{6})"/gi,
+            ];
+            
+            fillPatterns.forEach(pattern => {
+                let match;
+                while ((match = pattern.exec(clipboardText)) !== null) {
+                    let hexColor = null;
+                    
+                    if (match[1] && match[1].match(/^[0-9A-Fa-f]+$/)) {
+                        // Hex color found
+                        if (match[1].length === 3) {
+                            // Convert 3-digit to 6-digit hex
+                            hexColor = `#${match[1][0]}${match[1][0]}${match[1][1]}${match[1][1]}${match[1][2]}${match[1][2]}`;
+                        } else if (match[1].length === 6) {
+                            hexColor = `#${match[1]}`;
+                        }
+                    } else if (match[1] && match[2] && match[3]) {
+                        // RGB values found - convert to hex
+                        const r = parseInt(match[1]);
+                        const g = parseInt(match[2]);
+                        const b = parseInt(match[3]);
+                        if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+                            hexColor = ColorUtils.rgbToHex(r, g, b);
+                        }
+                    }
+                    
+                    // Validate and add color (excluding common non-color fills)
+                    if (hexColor && this.isValidHexColor(hexColor)) {
+                        const colorLower = hexColor.toLowerCase();
+                        // Skip common non-content colors
+                        if (colorLower !== '#ffffff' && colorLower !== '#000000' && colorLower !== '#none') {
+                            colors.push(hexColor.toUpperCase());
+                        }
+                    }
+                }
+            });
+            
+            // Remove duplicates while preserving order
+            const uniqueColors = [];
+            const seen = new Set();
+            colors.forEach(color => {
+                const colorLower = color.toLowerCase();
+                if (!seen.has(colorLower)) {
+                    uniqueColors.push(color);
+                    seen.add(colorLower);
+                }
+            });
+            
+            return uniqueColors;
+            
+        } catch (error) {
+            console.warn('Error parsing SVG colors:', error);
+            return colors;
+        }
     }
     
     isValidHexColor(hex) {
@@ -2557,6 +2762,7 @@ class ColorBandEditor {
         const contrastToggle = document.getElementById('contrastRatio');
         const tailwindToggle = document.getElementById('tailwindComparison');
         const deltaEToggle = document.getElementById('deltaEComparison');
+        const lightnessToggle = document.getElementById('lightnessComparison');
         const tailwindControl = document.getElementById('tailwindControl');
         const tailwindSelect = document.getElementById('tailwindColorSelect');
         const tailwindContainer = document.getElementById('tailwindComparisonContainer');
@@ -2589,6 +2795,20 @@ class ColorBandEditor {
             } else {
                 // Remove all delta E indicators
                 document.querySelectorAll('.delta-e-indicator').forEach(indicator => indicator.remove());
+            }
+        });
+        
+        // Lightness comparison toggle
+        lightnessToggle.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            const lightnessLegend = document.getElementById('lightnessLegend');
+            lightnessLegend.style.display = isChecked ? 'block' : 'none';
+            
+            if (isChecked) {
+                this.updateLightnessAnalysis();
+            } else {
+                // Remove all lightness indicators
+                document.querySelectorAll('.lightness-indicator').forEach(indicator => indicator.remove());
             }
         });
         
@@ -2719,8 +2939,48 @@ class ColorBandEditor {
                 const textColor = this.getBestTextColor(color1);
                 
                 indicator.style.color = textColor;
-                indicator.textContent = `${deltaE.toFixed(1)}→`;
+                indicator.textContent = `Δ${deltaE.toFixed(1)}→`;
                 indicator.title = `Delta E: ${deltaE.toFixed(2)} (${interpretation}) to next color`;
+                
+                // Position it relatively to the swatch
+                targetSwatch.style.position = 'relative';
+                targetSwatch.appendChild(indicator);
+            }
+        }
+    }
+
+    updateLightnessAnalysis() {
+        // Remove any existing lightness indicators
+        document.querySelectorAll('.lightness-indicator').forEach(indicator => indicator.remove());
+        
+        if (this.colors.length < 2) return;
+
+        // Get the color preview swatches
+        const swatches = document.querySelectorAll('#colorBandPreview .color-preview-swatch');
+        
+        // Calculate lightness difference for each adjacent pair and add indicators
+        for (let i = 0; i < this.colors.length - 1; i++) {
+            const color1 = this.colors[i];
+            const color2 = this.colors[i + 1];
+            
+            // Convert colors to LAB and extract lightness (L*)
+            const lab1 = ColorUtils.hexToLab(color1);
+            const lab2 = ColorUtils.hexToLab(color2);
+            
+            const lightnessDiff = Math.abs(lab2.l - lab1.l);
+            
+            // Add indicator to the first swatch (showing transition to next)
+            const targetSwatch = swatches[i];
+            if (targetSwatch) {
+                const indicator = document.createElement('div');
+                indicator.className = 'lightness-indicator';
+                
+                // Get the best text color for accessibility
+                const textColor = this.getBestTextColor(color1);
+                
+                indicator.style.color = textColor;
+                indicator.textContent = `${lightnessDiff.toFixed(1)}→`;
+                indicator.title = `Lightness difference: ${lightnessDiff.toFixed(2)} to next color`;
                 
                 // Position it relatively to the swatch
                 targetSwatch.style.position = 'relative';

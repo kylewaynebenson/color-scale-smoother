@@ -1384,6 +1384,18 @@ body.compact-view .contrast-indicator {
   pointer-events: none;
 }
 
+/* Lightness Difference Overlay */
+.lightness-indicator {
+  position: absolute;
+  top: var(--space-7);
+  left: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  line-height: 1;
+  pointer-events: none;
+}
+
 .delta-e-legend {
   margin-top: var(--space-2);
   background: var(--color-surface-secondary);
@@ -1427,8 +1439,35 @@ body.compact-view .contrast-indicator {
 .delta-e-legend-table .legend-significant { color: var(--color-error-500); }
 .delta-e-legend-table .legend-very-significant { color: var(--color-error-600); }
 
+/* Lightness Legend */
+.lightness-legend {
+  margin-top: var(--space-2);
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+  padding: var(--space-2);
+}
+
+.lightness-legend-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--space-1);
+  color: var(--color-text-primary);
+}
+
+.lightness-legend-description {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
 /* Hide delta E indicators in compact view */
 body.compact-view .delta-e-indicator {
+  display: none;
+}
+
+/* Hide lightness indicators in compact view */
+body.compact-view .lightness-indicator {
   display: none;
 }
 

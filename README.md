@@ -15,7 +15,7 @@ Visit the live application: [Color Band Smoother](https://kylewaynebenson.github
 - **Adjust Band Count**: Use the slider to set how many color bands you want (3-20)
 - **Edit Colors**: Click any color band to open the color picker, use the lock icon to preserve specific colors during smoothing.
 - **Complete History**: Edit and still able to recall old versions.
-- **Import and Export**: Copy as css from figma, then import. Or use the export buttons to show your work in Figma.
+- **Import and Export**: Copy shapes or "copy as CSS" from Figma, then import. Or use the export buttons to show your work in Figma.
 
 ## Local Development
 

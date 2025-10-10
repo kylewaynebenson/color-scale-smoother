@@ -145,6 +145,13 @@
                         </label>
                     </div>
                     
+                    <div class="audit-toggle">
+                        <input type="checkbox" id="lightnessComparison" class="checkbox">
+                        <label class="h4" for="lightnessComparison" class="label" title="Show lightness differences between adjacent colors">
+                            <span class="label__text">Lightness Difference</span>
+                        </label>
+                    </div>
+                    
                     <div class="control-row tailwind-control" id="tailwindControl" style="display: none;">
                         <label class="h4" for="tailwindColorSelect">Color:</label>
                         <select id="tailwindColorSelect" class="input input--select">
@@ -209,6 +216,14 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <div class="lightness-legend" id="lightnessLegend" style="display: none;">
+                        <div class="lightness-legend-title">Lightness Difference Guide</div>
+                        <div class="lightness-legend-description">
+                            Shows L* (lightness) component differences between adjacent colors.
+                            Values range from 0 (identical lightness) to 100 (maximum difference).
+                        </div>
                     </div>
                 </div>
             </div>
